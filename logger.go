@@ -63,7 +63,7 @@ type LogConfig struct {
 
 func DefaultConfig() *LogConfig {
 	return &LogConfig{
-		LogPrefix:      ">",
+		LogPrefix:      "> ",
 		LogFileAndLine: true,
 		FatalPanics:    true,
 		FatalExit:      os.Exit,
