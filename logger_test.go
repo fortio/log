@@ -1,4 +1,4 @@
-// Copyright 2017 Istio Authors
+// Copyright 2017-2023 Fortio Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"flag"
 	"log"
 	"os"
 	"os/exec"
@@ -29,19 +28,19 @@ import (
 func TestLoggerFilenameLine(t *testing.T) {
 	SetLogLevel(Debug) // make sure it's already debug when we capture
 	on := true
-	LogFileAndLine = &on
-	*LogPrefix = "-prefix-"
+	Config.LogFileAndLine = on
+	Config.LogPrefix = "-prefix-"
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
 	SetOutput(w)
 	SetFlags(0)
 	SetLogLevel(Debug)
 	if LogDebug() {
-		Debugf("test") // line 40
+		Debugf("test") // line 39
 	}
 	w.Flush()
 	actual := b.String()
-	expected := "D logger_test.go:40-prefix-test\n"
+	expected := "D logger_test.go:39-prefix-test\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
 	}
@@ -49,7 +48,7 @@ func TestLoggerFilenameLine(t *testing.T) {
 
 func TestSetLevel(t *testing.T) {
 	_ = SetLogLevel(Info)
-	err := setLogLevelStr("debug")
+	err := SetLogLevelStr("debug")
 	if err != nil {
 		t.Errorf("unexpected error for valid level %v", err)
 	}
@@ -57,23 +56,7 @@ func TestSetLevel(t *testing.T) {
 	if prev != Debug {
 		t.Errorf("unexpected level after setting debug %v", prev)
 	}
-	err = setLogLevelStr("bogus")
-	if err == nil {
-		t.Errorf("Didn't get an error setting bogus level")
-	}
-}
-
-func TestSetLevelFLag(t *testing.T) {
-	_ = SetLogLevel(Info)
-	err := flag.CommandLine.Set("loglevel", "  deBUG\n")
-	if err != nil {
-		t.Errorf("unexpected error for valid level %v", err)
-	}
-	prev := SetLogLevel(Info)
-	if prev != Debug {
-		t.Errorf("unexpected level after setting debug %v", prev)
-	}
-	err = flag.CommandLine.Set("loglevel", "bogus")
+	err = SetLogLevelStr("bogus")
 	if err == nil {
 		t.Errorf("Didn't get an error setting bogus level")
 	}
@@ -84,8 +67,8 @@ func TestLogger1(t *testing.T) {
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
 	SetLogLevel(Info) // reset from other tests
-	*LogFileAndLine = false
-	*LogPrefix = ""
+	Config.LogFileAndLine = false
+	Config.LogPrefix = ""
 	log.SetOutput(w)
 	log.SetFlags(0)
 	// Start of the actual test
@@ -141,24 +124,6 @@ func TestLogger1(t *testing.T) {
 	}
 }
 
-func TestChangeFlagsDefaultErrCase1(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("expected a panic from log.Fatalf, didn't get one")
-		}
-	}()
-	ChangeFlagsDefault("value", "nosuchflag")
-}
-
-func TestChangeFlagsDefaultErrCase2(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("expected a panic from log.Fatalf, didn't get one")
-		}
-	}()
-	ChangeFlagsDefault("foo", "loglevel")
-}
-
 func TestLogFatal(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
@@ -169,7 +134,7 @@ func TestLogFatal(t *testing.T) {
 }
 
 func TestLoggerFatalCliMode(t *testing.T) {
-	SetFlagDefaultsForClientTools()
+	SetDefaultsForClientTools()
 	if os.Getenv("DO_LOG_FATALF") == "1" {
 		Fatalf("test")
 		Errf("should have exited / this shouldn't have been reached")
@@ -190,9 +155,9 @@ func TestLoggerFatalCliMode(t *testing.T) {
 }
 
 func TestLoggerFatalExitOverride(t *testing.T) {
-	SetFlagDefaultsForClientTools()
+	SetDefaultsForClientTools()
 	exitCalled := false
-	FatalExit = func(code int) {
+	Config.FatalExit = func(code int) {
 		exitCalled = true
 	}
 	Fatalf("testing log.Fatalf exit case")

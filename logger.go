@@ -12,10 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/*
+Fortio's log is simple logger built on top of go's default one with
+additional opinionated levels similar to glog but simpler to use and configure.
+```
+log.Debugf() // Debug level
+log.LogVf()  // Verbose level
+log.Infof()  // Info/default level
+log.Warnf()  // Warning level
+log.Errf()   // Error level
+log.Critf()  // Critical level (always logged even if level is set to max)
+log.Fatalf() // Fatal level - program will panic/exit
+```
+See Config object for options like whether to include line number and file name of caller or not etc
+*/
 package log // import "fortio.org/log"
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -40,48 +53,45 @@ const (
 	Fatal
 )
 
-var (
-	levelToStrA []string
-	levelToStrM map[string]Level
-	// LogPrefix is a prefix to include in each log line.
-	LogPrefix = flag.String("logprefix", "> ", "Prefix to log lines before logged messages")
-	// LogFileAndLine determines if the log lines will contain caller file name and line number.
-	LogFileAndLine = flag.Bool("logcaller", true, "Logs filename and line number of callers to log")
-	levelInternal  int32
-	fatalPanics    = flag.Bool("logfatalpanics", true, "If true, log.Fatal will panic (stack trace) instead of just exit 1")
-	// Tests can override this to cover exit case.
-	FatalExit = os.Exit
-)
+//nolint:revive // we keep "Config" for the variable itself.
+type LogConfig struct {
+	LogPrefix      string    // "Prefix to log lines before logged messages
+	LogFileAndLine bool      // Logs filename and line number of callers to log.
+	FatalPanics    bool      // If true, log.Fatalf will panic (stack trace) instead of just exit 1
+	FatalExit      func(int) // Function to call upon log.Fatalf. e.g. os.Exit.
+}
 
-// ChangeFlagsDefault sets some flags to a different default.
-func ChangeFlagsDefault(newDefault string, flagNames ...string) {
-	for _, flagName := range flagNames {
-		f := flag.Lookup(flagName)
-		if f == nil {
-			Fatalf("flag %s not found", flagName)
-			continue // not reached but linter doesn't know Fatalf panics/exits
-		}
-		f.DefValue = newDefault
-		err := f.Value.Set(newDefault)
-		if err != nil {
-			Fatalf("error setting flag %s: %v", flagName, err)
-		}
+func DefaultConfig() *LogConfig {
+	return &LogConfig{
+		LogPrefix:      ">",
+		LogFileAndLine: true,
+		FatalPanics:    true,
+		FatalExit:      os.Exit,
 	}
 }
 
-// SetFlagDefaultsForClientTools changes the default value of -logprefix and -logcaller
+var (
+	Config = DefaultConfig()
+	// Used for dynamic flag setting as strings and validation.
+	LevelToStrA   []string
+	levelToStrM   map[string]Level
+	levelInternal int32
+)
+
+// SetDefaultsForClientTools changes the default value of LogPrefix and LogFileAndLine
 // to make output without caller and prefix, a default more suitable for command line tools (like dnsping).
 // Needs to be called before flag.Parse(). Caller could also use log.Printf instead of changing this
 // if not wanting to use levels. Also makes log.Fatalf just exit instead of panic.
-func SetFlagDefaultsForClientTools() {
-	ChangeFlagsDefault("", "logprefix")
-	ChangeFlagsDefault("false", "logcaller", "logfatalpanics")
+func SetDefaultsForClientTools() {
+	Config.LogPrefix = ""
+	Config.LogFileAndLine = false
+	Config.FatalPanics = false
 }
 
 //nolint:gochecknoinits // needed
 func init() {
 	setLevel(Info) // starting value
-	levelToStrA = []string{
+	LevelToStrA = []string{
 		"Debug",
 		"Verbose",
 		"Info",
@@ -90,28 +100,12 @@ func init() {
 		"Critical",
 		"Fatal",
 	}
-	levelToStrM = make(map[string]Level, 2*len(levelToStrA))
-	for l, name := range levelToStrA {
+	levelToStrM = make(map[string]Level, 2*len(LevelToStrA))
+	for l, name := range LevelToStrA {
 		// Allow both -loglevel Verbose and -loglevel verbose ...
 		levelToStrM[name] = Level(l)
 		levelToStrM[strings.ToLower(name)] = Level(l)
 	}
-	// virtual dynLevel flag that maps back to actual level
-/*
-	_ = dflag.DynString(flag.CommandLine, "loglevel", GetLogLevel().String(),
-		fmt.Sprintf("loglevel, one of %v", levelToStrA)).WithInputMutator(
-		func(inp string) string {
-			// The validation map has full lowercase and capitalized first letter version
-			return strings.ToLower(strings.TrimSpace(inp))
-		}).WithValidator(
-		func(newStr string) error {
-			_, err := ValidateLevel(newStr)
-			return err
-		}).WithSyncNotifier(
-		func(old, newStr string) {
-			_ = setLogLevelStr(newStr) // will succeed as we just validated it first
-		})
-*/
 	log.SetFlags(log.Ltime)
 }
 
@@ -121,7 +115,7 @@ func setLevel(lvl Level) {
 
 // String returns the string representation of the level.
 func (l Level) String() string {
-	return levelToStrA[l]
+	return LevelToStrA[l]
 }
 
 // ValidateLevel returns error if the level string is not valid.
@@ -129,13 +123,28 @@ func ValidateLevel(str string) (Level, error) {
 	var lvl Level
 	var ok bool
 	if lvl, ok = levelToStrM[str]; !ok {
-		return -1, fmt.Errorf("should be one of %v", levelToStrA)
+		return -1, fmt.Errorf("should be one of %v", LevelToStrA)
 	}
 	return lvl, nil
 }
 
-// Sets from string.
-func setLogLevelStr(str string) error {
+// Sets level from string (called by dflags).
+/*
+   _ = dflag.DynString(flag.CommandLine, "loglevel", GetLogLevel().String(),
+           fmt.Sprintf("loglevel, one of %v", LevelToStrA)).WithInputMutator(
+           func(inp string) string {
+                   // The validation map has full lowercase and capitalized first letter version
+                   return strings.ToLower(strings.TrimSpace(inp))
+           }).WithValidator(
+           func(newStr string) error {
+                   _, err := ValidateLevel(newStr)
+                   return err
+           }).WithSyncNotifier(
+           func(old, newStr string) {
+                   _ = SetLogLevelStr(newStr) // will succeed as we just validated it first
+           })
+*/
+func SetLogLevelStr(str string) error {
 	var lvl Level
 	var err error
 	if lvl, err = ValidateLevel(str); err != nil {
@@ -203,12 +212,12 @@ func logPrintf(lvl Level, format string, rest ...interface{}) {
 	if !Log(lvl) {
 		return
 	}
-	if *LogFileAndLine {
+	if Config.LogFileAndLine {
 		_, file, line, _ := runtime.Caller(2)
 		file = file[strings.LastIndex(file, "/")+1:]
-		log.Print(levelToStrA[lvl][0:1], " ", file, ":", line, *LogPrefix, fmt.Sprintf(format, rest...))
+		log.Print(LevelToStrA[lvl][0:1], " ", file, ":", line, Config.LogPrefix, fmt.Sprintf(format, rest...))
 	} else {
-		log.Print(levelToStrA[lvl][0:1], " ", *LogPrefix, fmt.Sprintf(format, rest...))
+		log.Print(LevelToStrA[lvl][0:1], " ", Config.LogPrefix, fmt.Sprintf(format, rest...))
 	}
 }
 
@@ -262,10 +271,10 @@ func Critf(format string, rest ...interface{}) {
 // Fatalf logs if Warning level is on and panics or exits.
 func Fatalf(format string, rest ...interface{}) {
 	logPrintf(Fatal, format, rest...)
-	if *fatalPanics {
+	if Config.FatalPanics {
 		panic("aborting...")
 	}
-	FatalExit(1)
+	Config.FatalExit(1)
 }
 
 // FErrF logs a fatal error and returns 1.
