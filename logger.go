@@ -1,4 +1,4 @@
-// Copyright 2017 Istio Authors
+// Copyright 2017-2023 Fortio Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package log // import "fortio.org/fortio/log"
+package log // import "fortio.org/log"
 
 import (
 	"flag"
@@ -23,8 +23,6 @@ import (
 	"runtime"
 	"strings"
 	"sync/atomic"
-
-	"fortio.org/fortio/dflag"
 )
 
 // Level is the level of logging (0 Debug -> 6 Fatal).
@@ -99,6 +97,7 @@ func init() {
 		levelToStrM[strings.ToLower(name)] = Level(l)
 	}
 	// virtual dynLevel flag that maps back to actual level
+/*
 	_ = dflag.DynString(flag.CommandLine, "loglevel", GetLogLevel().String(),
 		fmt.Sprintf("loglevel, one of %v", levelToStrA)).WithInputMutator(
 		func(inp string) string {
@@ -112,6 +111,7 @@ func init() {
 		func(old, newStr string) {
 			_ = setLogLevelStr(newStr) // will succeed as we just validated it first
 		})
+*/
 	log.SetFlags(log.Ltime)
 }
 
