@@ -206,6 +206,9 @@ func TestStaticFlagDefault(t *testing.T) {
 	if f.Value.String() != "Warning" {
 		t.Errorf("expected flag default value to be Warning, got %s", f.Value.String())
 	}
+	if err := f.Value.Set("badlevel"); err == nil {
+		t.Error("expected error passing a bad level value, didn't get one")
+	}
 	if err := f.Value.Set("  iNFo\n"); err != nil {
 		t.Errorf("expected flag to be settable, got %v", err)
 	}
