@@ -132,7 +132,8 @@ func LoggerStaticFlagSetup(names ...string) {
 		names = []string{"loglevel"}
 	}
 	for _, name := range names {
-		flag.Var(&flagV, name, fmt.Sprintf("logging `level`, one of %v", LevelToStrA))
+		flag.Var(&flagV, name, fmt.Sprintf("logging `level`, one of %v (default %q)", LevelToStrA,
+			GetLogLevel()))
 	}
 }
 
