@@ -37,11 +37,11 @@ func TestLoggerFilenameLine(t *testing.T) {
 	SetFlags(0)
 	SetLogLevel(Debug)
 	if LogDebug() {
-		Debugf("test") // line 39
+		Debugf("test") // line 40
 	}
 	w.Flush()
 	actual := b.String()
-	expected := "D logger_test.go:39-prefix-test\n"
+	expected := "D logger_test.go:40-prefix-test\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
 	}
@@ -167,9 +167,38 @@ func TestLoggerFatalExitOverride(t *testing.T) {
 	}
 }
 
-func TestStaticFlag(t *testing.T) {
+func TestMultipleFlags(t *testing.T) {
+	SetLogLevelQuiet(Verbose)
+	LoggerStaticFlagSetup("llvl1", "llv2")
+	f := flag.Lookup("loglevel")
+	if f != nil {
+		t.Error("expected default loglevel to not be registered")
+	}
+	f = flag.Lookup("llvl1")
+	if f.Value.String() != "Verbose" {
+		t.Errorf("expected flag default value to be Verbose, got %s", f.Value.String())
+	}
+	if err := f.Value.Set("  iNFo\n"); err != nil {
+		t.Errorf("expected flag to be settable, got %v", err)
+	}
+	f2 := flag.Lookup("llv2")
+	if f2.Value.String() != "Info" {
+		t.Errorf("expected linked flag value to be Info, got %s", f2.Value.String())
+	}
+	if GetLogLevel() != Info {
+		t.Errorf("expected log level to be Info, got %s", GetLogLevel().String())
+	}
+	if err := f2.Value.Set("debug"); err != nil {
+		t.Errorf("expected flag2 to be settable, got %v", err)
+	}
+	if GetLogLevel() != Debug {
+		t.Errorf("expected log level to be Debug, got %s", GetLogLevel().String())
+	}
+}
+
+func TestStaticFlagDefault(t *testing.T) {
 	SetLogLevelQuiet(Warning)
-	LoggerStaticFlagSetup("")
+	LoggerStaticFlagSetup()
 	f := flag.Lookup("loglevel")
 	if f == nil {
 		t.Fatal("expected flag to be registered")

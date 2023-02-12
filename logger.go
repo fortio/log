@@ -16,13 +16,25 @@
 Fortio's log is simple logger built on top of go's default one with
 additional opinionated levels similar to glog but simpler to use and configure.
 ```
-log.Debugf() // Debug level
-log.LogVf()  // Verbose level
-log.Infof()  // Info/default level
-log.Warnf()  // Warning level
-log.Errf()   // Error level
-log.Critf()  // Critical level (always logged even if level is set to max)
-log.Fatalf() // Fatal level - program will panic/exit
+// On a cli tool (avoids file name and line numbers, stack traces on log.Fatalf etc)
+log.SetDefaultsForClientTools()
+log.LoggerStaticFlagSetup() // adds -loglevel flag to configure
+// Or on a server type, import fortio.org/dflag, then:
+dflag.LoggerFlagSetup()
+
+// Then, printf style leveled logging:
+log.Debugf(...) // Debug level
+log.LogVf(...)  // Verbose level
+log.Infof(...)  // Info/default level
+log.Warnf(...)  // Warning level
+log.Errf(...)   // Error level
+log.Critf(...)  // Critical level (always logged even if level is set to max)
+log.Fatalf(...) // Fatal level - program will panic/exit
+
+// for http servers there is also
+// access log type including user-agent, forwarded ip/proto (behind load balancer case),
+// TLS crypto used
+log.LogRequest(r, "some info")
 ```
 See Config object for options like whether to include line number and file name of caller or not etc
 */
@@ -132,12 +144,16 @@ func ValidateLevel(str string) (Level, error) {
 // LoggerStaticFlagSetup call to setup a static flag under the passed name or
 // `-loglevel` by default, to set the log level.
 // Use https://pkg.go.dev/fortio.org/dflag/dynloglevel#LoggerFlagSetup for a dynamic flag instead.
-func LoggerStaticFlagSetup(name string) {
-	if name == "" {
-		name = "loglevel"
+func LoggerStaticFlagSetup(names ...string) {
+	if len(names) == 0 {
+		names = []string{"loglevel"}
 	}
-	flag.Var(&flagV, name, fmt.Sprintf("logging `level`, one of %v", LevelToStrA))
+	for _, name := range names {
+		flag.Var(&flagV, name, fmt.Sprintf("logging `level`, one of %v", LevelToStrA))
+	}
 }
+
+// --- Start of code/types needed string to level custom flag validation section ---
 
 type flagValidation struct{}
 
@@ -156,6 +172,8 @@ func (f *flagValidation) Set(inp string) error {
 	SetLogLevel(lvl)
 	return nil
 }
+
+// --- End of code/types needed string to level custom flag validation section ---
 
 // Sets level from string (called by dflags).
 // Use https://pkg.go.dev/fortio.org/dflag/dynloglevel#LoggerFlagSetup to set up
