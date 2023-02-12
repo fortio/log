@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"flag"
 	"log"
 	"os"
 	"os/exec"
@@ -163,6 +164,24 @@ func TestLoggerFatalExitOverride(t *testing.T) {
 	Fatalf("testing log.Fatalf exit case")
 	if !exitCalled {
 		t.Error("expected exit function override not called")
+	}
+}
+
+func TestStaticFlag(t *testing.T) {
+	SetLogLevelQuiet(Warning)
+	LoggerStaticFlagSetup("")
+	f := flag.Lookup("loglevel")
+	if f == nil {
+		t.Fatal("expected flag to be registered")
+	}
+	if f.Value.String() != "Warning" {
+		t.Errorf("expected flag default value to be Warning, got %s", f.Value.String())
+	}
+	if err := f.Value.Set("  iNFo\n"); err != nil {
+		t.Errorf("expected flag to be settable, got %v", err)
+	}
+	if GetLogLevel() != Info {
+		t.Errorf("expected log level to be Info, got %s", GetLogLevel().String())
 	}
 }
 

@@ -29,6 +29,7 @@ See Config object for options like whether to include line number and file name 
 package log // import "fortio.org/log"
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -128,22 +129,37 @@ func ValidateLevel(str string) (Level, error) {
 	return lvl, nil
 }
 
+// LoggerStaticFlagSetup call to setup a static flag under the passed name or
+// `-loglevel` by default, to set the log level.
+// Use https://pkg.go.dev/fortio.org/dflag/dynloglevel#LoggerFlagSetup for a dynamic flag instead.
+func LoggerStaticFlagSetup(name string) {
+	if name == "" {
+		name = "loglevel"
+	}
+	flag.Var(&flagV, name, fmt.Sprintf("logging `level`, one of %v", LevelToStrA))
+}
+
+type flagValidation struct{}
+
+var flagV flagValidation
+
+func (f *flagValidation) String() string {
+	return GetLogLevel().String()
+}
+
+func (f *flagValidation) Set(inp string) error {
+	v := strings.ToLower(strings.TrimSpace(inp))
+	lvl, err := ValidateLevel(v)
+	if err != nil {
+		return err
+	}
+	SetLogLevel(lvl)
+	return nil
+}
+
 // Sets level from string (called by dflags).
-/*
-   _ = dflag.DynString(flag.CommandLine, "loglevel", GetLogLevel().String(),
-           fmt.Sprintf("loglevel, one of %v", LevelToStrA)).WithInputMutator(
-           func(inp string) string {
-                   // The validation map has full lowercase and capitalized first letter version
-                   return strings.ToLower(strings.TrimSpace(inp))
-           }).WithValidator(
-           func(newStr string) error {
-                   _, err := ValidateLevel(newStr)
-                   return err
-           }).WithSyncNotifier(
-           func(old, newStr string) {
-                   _ = SetLogLevelStr(newStr) // will succeed as we just validated it first
-           })
-*/
+// Use https://pkg.go.dev/fortio.org/dflag/dynloglevel#LoggerFlagSetup to set up
+// `-loglevel` as a dynamic flag (or an example of how this function is used).
 func SetLogLevelStr(str string) error {
 	var lvl Level
 	var err error
