@@ -29,6 +29,8 @@ func TLSInfo(r *http.Request) string {
 }
 
 // LogRequest logs the incoming request, including headers when loglevel is verbose.
+//
+//nolint:revive
 func LogRequest(r *http.Request, msg string) {
 	if Log(Info) {
 		tlsInfo := TLSInfo(r)

@@ -15,20 +15,13 @@
 /*
 Fortio's log is simple logger built on top of go's default one with
 additional opinionated levels similar to glog but simpler to use and configure.
-```
-log.Debugf() // Debug level
-log.LogVf()  // Verbose level
-log.Infof()  // Info/default level
-log.Warnf()  // Warning level
-log.Errf()   // Error level
-log.Critf()  // Critical level (always logged even if level is set to max)
-log.Fatalf() // Fatal level - program will panic/exit
-```
-See Config object for options like whether to include line number and file name of caller or not etc
+
+See [Config] object for options like whether to include line number and file name of caller or not etc
 */
 package log // import "fortio.org/log"
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -61,6 +54,9 @@ type LogConfig struct {
 	FatalExit      func(int) // Function to call upon log.Fatalf. e.g. os.Exit.
 }
 
+// DefaultConfig() returns the default initial configuration for the logger, best suited
+// for servers. It will log caller file and line number, use a prefix to split line info
+// from the message and panic (+exit) on Fatal.
 func DefaultConfig() *LogConfig {
 	return &LogConfig{
 		LogPrefix:      "> ",
@@ -128,22 +124,43 @@ func ValidateLevel(str string) (Level, error) {
 	return lvl, nil
 }
 
+// LoggerStaticFlagSetup call to setup a static flag under the passed name or
+// `-loglevel` by default, to set the log level.
+// Use https://pkg.go.dev/fortio.org/dflag/dynloglevel#LoggerFlagSetup for a dynamic flag instead.
+func LoggerStaticFlagSetup(names ...string) {
+	if len(names) == 0 {
+		names = []string{"loglevel"}
+	}
+	for _, name := range names {
+		flag.Var(&flagV, name, fmt.Sprintf("logging `level`, one of %v", LevelToStrA))
+	}
+}
+
+// --- Start of code/types needed string to level custom flag validation section ---
+
+type flagValidation struct{}
+
+var flagV flagValidation
+
+func (f *flagValidation) String() string {
+	return GetLogLevel().String()
+}
+
+func (f *flagValidation) Set(inp string) error {
+	v := strings.ToLower(strings.TrimSpace(inp))
+	lvl, err := ValidateLevel(v)
+	if err != nil {
+		return err
+	}
+	SetLogLevel(lvl)
+	return nil
+}
+
+// --- End of code/types needed string to level custom flag validation section ---
+
 // Sets level from string (called by dflags).
-/*
-   _ = dflag.DynString(flag.CommandLine, "loglevel", GetLogLevel().String(),
-           fmt.Sprintf("loglevel, one of %v", LevelToStrA)).WithInputMutator(
-           func(inp string) string {
-                   // The validation map has full lowercase and capitalized first letter version
-                   return strings.ToLower(strings.TrimSpace(inp))
-           }).WithValidator(
-           func(newStr string) error {
-                   _, err := ValidateLevel(newStr)
-                   return err
-           }).WithSyncNotifier(
-           func(old, newStr string) {
-                   _ = SetLogLevelStr(newStr) // will succeed as we just validated it first
-           })
-*/
+// Use https://pkg.go.dev/fortio.org/dflag/dynloglevel#LoggerFlagSetup to set up
+// `-loglevel` as a dynamic flag (or an example of how this function is used).
 func SetLogLevelStr(str string) error {
 	var lvl Level
 	var err error
@@ -279,11 +296,17 @@ func Fatalf(format string, rest ...interface{}) {
 
 // FErrF logs a fatal error and returns 1.
 // meant for cli main functions written like:
-// func main() { os.Exit(Main()) }
-// and
-// if err != nil { return log.FErrf("error: %v", err) }
+//
+//	func main() { os.Exit(Main()) }
+//
+// and in Main() they can do:
+//
+//	if err != nil {
+//		return log.FErrf("error: %v", err)
+//	}
+//
 // so they can be tested with testscript.
-// See https://github.com/fortio/delta/ for example.
+// See https://github.com/fortio/delta/ for an example.
 func FErrf(format string, rest ...interface{}) int {
 	logPrintf(Fatal, format, rest...)
 	return 1
@@ -299,7 +322,8 @@ func LogVerbose() bool { //nolint:revive
 	return Log(Verbose)
 }
 
-// LoggerI defines a log.Logger like interface for simple logging.
+// LoggerI defines a log.Logger like interface to pass to packages
+// for simple logging. See [Logger()].
 type LoggerI interface {
 	Printf(format string, rest ...interface{})
 }
