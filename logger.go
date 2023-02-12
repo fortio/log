@@ -54,6 +54,9 @@ type LogConfig struct {
 	FatalExit      func(int) // Function to call upon log.Fatalf. e.g. os.Exit.
 }
 
+// DefaultConfig() returns the default initial configuration for the logger, best suited
+// for servers. It will log caller file and line number, use a prefix to split line info
+// from the message and panic (+exit) on Fatal.
 func DefaultConfig() *LogConfig {
 	return &LogConfig{
 		LogPrefix:      "> ",
@@ -293,11 +296,17 @@ func Fatalf(format string, rest ...interface{}) {
 
 // FErrF logs a fatal error and returns 1.
 // meant for cli main functions written like:
-// func main() { os.Exit(Main()) }
-// and
-// if err != nil { return log.FErrf("error: %v", err) }
+//
+//	func main() { os.Exit(Main()) }
+//
+// and in Main() they can do:
+//
+//	if err != nil {
+//		return log.FErrf("error: %v", err)
+//	}
+//
 // so they can be tested with testscript.
-// See https://github.com/fortio/delta/ for example.
+// See https://github.com/fortio/delta/ for an example.
 func FErrf(format string, rest ...interface{}) int {
 	logPrintf(Fatal, format, rest...)
 	return 1
@@ -313,7 +322,8 @@ func LogVerbose() bool { //nolint:revive
 	return Log(Verbose)
 }
 
-// LoggerI defines a log.Logger like interface for simple logging.
+// LoggerI defines a log.Logger like interface to pass to packages
+// for simple logging. See [Logger()].
 type LoggerI interface {
 	Printf(format string, rest ...interface{})
 }
