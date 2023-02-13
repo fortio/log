@@ -22,6 +22,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -37,11 +38,11 @@ func TestLoggerFilenameLine(t *testing.T) {
 	SetFlags(0)
 	SetLogLevel(Debug)
 	if LogDebug() {
-		Debugf("test") // line 40
+		Debugf("test") // line 41
 	}
 	w.Flush()
 	actual := b.String()
-	expected := "D logger_test.go:40-prefix-test\n"
+	expected := "D logger_test.go:41-prefix-test\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
 	}
@@ -169,19 +170,21 @@ func TestLoggerFatalExitOverride(t *testing.T) {
 
 func TestMultipleFlags(t *testing.T) {
 	SetLogLevelQuiet(Verbose)
-	LoggerStaticFlagSetup("llvl1", "llv2")
+	// use x... so it's sorted after the standard loglevel for package level
+	// print default tests were all 3 flags are present.
+	LoggerStaticFlagSetup("xllvl1", "xllvl2")
 	f := flag.Lookup("loglevel")
 	if f != nil {
 		t.Error("expected default loglevel to not be registered")
 	}
-	f = flag.Lookup("llvl1")
+	f = flag.Lookup("xllvl1")
 	if f.Value.String() != "Verbose" {
 		t.Errorf("expected flag default value to be Verbose, got %s", f.Value.String())
 	}
 	if err := f.Value.Set("  iNFo\n"); err != nil {
 		t.Errorf("expected flag to be settable, got %v", err)
 	}
-	f2 := flag.Lookup("llv2")
+	f2 := flag.Lookup("xllvl2")
 	if f2.Value.String() != "Info" {
 		t.Errorf("expected linked flag value to be Info, got %s", f2.Value.String())
 	}
@@ -199,6 +202,16 @@ func TestMultipleFlags(t *testing.T) {
 func TestStaticFlagDefault(t *testing.T) {
 	SetLogLevelQuiet(Warning)
 	LoggerStaticFlagSetup()
+	var b bytes.Buffer
+	flag.CommandLine.SetOutput(&b)
+	flag.CommandLine.PrintDefaults()
+	s := b.String()
+	expected := "  -loglevel level\n" +
+		"    \tlog level, one of [Debug Verbose Info Warning Error Critical Fatal] " +
+		"(default Warning)\n"
+	if !strings.HasPrefix(s, expected) {
+		t.Errorf("expected flag output to start with %q, got %q", expected, s)
+	}
 	f := flag.Lookup("loglevel")
 	if f == nil {
 		t.Fatal("expected flag to be registered")

@@ -132,18 +132,24 @@ func LoggerStaticFlagSetup(names ...string) {
 		names = []string{"loglevel"}
 	}
 	for _, name := range names {
-		flag.Var(&flagV, name, fmt.Sprintf("logging `level`, one of %v (default %q)", LevelToStrA,
-			GetLogLevel()))
+		flag.Var(&flagV, name, fmt.Sprintf("log `level`, one of %v", LevelToStrA))
 	}
 }
 
 // --- Start of code/types needed string to level custom flag validation section ---
 
-type flagValidation struct{}
+type flagValidation struct {
+	ours bool
+}
 
-var flagV flagValidation
+var flagV = flagValidation{true}
 
 func (f *flagValidation) String() string {
+	// Need to tell if it's our value or the zeroValue the flag package creates
+	// to decide whether to print (default ...) or not.
+	if !f.ours {
+		return ""
+	}
 	return GetLogLevel().String()
 }
 
