@@ -25,7 +25,7 @@ log.Fatalf(...) // Fatal level - program will panic/exit
 
 // for http servers there is also
 // access log type including user-agent, forwarded ip/proto (behind load balancer case),
-// TLS crypto used
+// TLS crypto used and CN of peer certificate if any.
 log.LogRequest(r, "some info")
 ```
 
