@@ -20,7 +20,8 @@ import (
 	"net/http"
 )
 
-// TLSInfo returns " https <cipher suite>" if the request is using TLS, or "" otherwise.
+// TLSInfo returns ' https <cipher suite> "<peer CN>"' if the request is using TLS
+// (and ' "<peer CN>"' part if mtls / a peer certificate is present) or "" otherwise.
 func TLSInfo(r *http.Request) string {
 	if r.TLS == nil {
 		return ""
@@ -32,7 +33,8 @@ func TLSInfo(r *http.Request) string {
 	return fmt.Sprintf(" https %s%s", tls.CipherSuiteName(r.TLS.CipherSuite), cliCert)
 }
 
-// LogRequest logs the incoming request, including headers when loglevel is verbose.
+// LogRequest logs the incoming request, TLSInfo,
+// including headers when loglevel is verbose.
 //
 //nolint:revive
 func LogRequest(r *http.Request, msg string) {
