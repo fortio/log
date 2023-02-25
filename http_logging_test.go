@@ -19,7 +19,7 @@ func TestLogRequest(t *testing.T) {
 	SetOutput(w)
 	SetFlags(0) // remove timestamps
 	h := http.Header{"foo": []string{"bar"}}
-	cert := &x509.Certificate{Subject: pkix.Name{CommonName: "xyz"}}
+	cert := &x509.Certificate{Subject: pkix.Name{CommonName: "x\nyz"}} // make sure special chars are escaped
 	r := &http.Request{TLS: &tls.ConnectionState{PeerCertificates: []*x509.Certificate{cert}}, Header: h}
 	LogRequest(r, "test1")
 	r.TLS = nil
@@ -27,7 +27,7 @@ func TestLogRequest(t *testing.T) {
 	LogRequest(r, "test2")
 	w.Flush()
 	actual := b.String()
-	expected := "test1:  <nil>   ()  \"\" https 0x0000 CN=xyz\nHeader Host: \nHeader foo: bar\n" +
+	expected := "test1:  <nil>   ()  \"\" https 0x0000 \"CN=x\\nyz\"\nHeader Host: \nHeader foo: bar\n" +
 		"test2:  <nil>   ()  \"\"\nHeader Host: \n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%q\nvs:\n%q\n", actual, expected)

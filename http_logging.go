@@ -27,7 +27,7 @@ func TLSInfo(r *http.Request) string {
 	}
 	cliCert := ""
 	if len(r.TLS.PeerCertificates) > 0 {
-		cliCert = fmt.Sprintf(" %s", r.TLS.PeerCertificates[0].Subject)
+		cliCert = fmt.Sprintf(" %q", r.TLS.PeerCertificates[0].Subject)
 	}
 	return fmt.Sprintf(" https %s%s", tls.CipherSuiteName(r.TLS.CipherSuite), cliCert)
 }
