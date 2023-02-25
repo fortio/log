@@ -25,7 +25,11 @@ func TLSInfo(r *http.Request) string {
 	if r.TLS == nil {
 		return ""
 	}
-	return fmt.Sprintf(" https %s", tls.CipherSuiteName(r.TLS.CipherSuite))
+	cliCert := ""
+	if len(r.TLS.PeerCertificates) > 0 {
+		cliCert = fmt.Sprintf(" %s", r.TLS.PeerCertificates[0].Subject)
+	}
+	return fmt.Sprintf(" https %s%s", tls.CipherSuiteName(r.TLS.CipherSuite), cliCert)
 }
 
 // LogRequest logs the incoming request, including headers when loglevel is verbose.
