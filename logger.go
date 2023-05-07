@@ -85,7 +85,7 @@ var (
 	}
 	levelToStrM   map[string]Level
 	levelInternal int32
-	// Used for JSON logging
+	// Used for JSON logging.
 	LevelToStructered = []string{
 		// matching https://github.com/grafana/grafana/blob/main/docs/sources/explore/logs-integration.md
 		// adding the "" around to save processing when generating json. using short names to save some bytes.
@@ -110,11 +110,11 @@ func SetDefaultsForClientTools() {
 	Config.Structured = false
 }
 
-// LogEntry is the logical format of the JSON [Config.Structured] output mode.
+// JSONEntry is the logical format of the JSON [Config.Structured] output mode.
 // While that serialization of is custom in order to be cheap, it maps to the following
 // structure.
-type LogEntry struct {
-	Ts    int64 // in microseconds since epoch (unix micros)
+type JSONEntry struct {
+	TS    int64 // in microseconds since epoch (unix micros)
 	Level string
 	File  string
 	Line  int
@@ -123,11 +123,11 @@ type LogEntry struct {
 
 // LogEntry Ts to time.Time conversion.
 // The returned time is set UTC to avoid TZ mismatch.
-func (l *LogEntry) Time() time.Time {
+func (l *JSONEntry) Time() time.Time {
 	const million = int64(1e6)
 	return time.Unix(
-		l.Ts/million,        // Microseconds -> Seconds
-		1000*(l.Ts%million), // Microseconds -> Nanoseconds
+		l.TS/million,        // Microseconds -> Seconds
+		1000*(l.TS%million), // Microseconds -> Nanoseconds
 	)
 }
 
@@ -271,8 +271,10 @@ func Logf(lvl Level, format string, rest ...interface{}) {
 }
 
 // Used when doing our own logging writing, in structured mode.
-var jsonWriter io.Writer = os.Stderr
-var jsonWriterMutex sync.Mutex
+var (
+	jsonWriter      io.Writer = os.Stderr
+	jsonWriterMutex sync.Mutex
+)
 
 func jsonWrite(msg string) {
 	jsonWriterMutex.Lock()
@@ -280,23 +282,22 @@ func jsonWrite(msg string) {
 	jsonWriterMutex.Unlock()
 }
 
-func TimeToTs(t time.Time) int64 {
+func TimeToTS(t time.Time) int64 {
 	return t.UnixMicro()
 }
 
 func jsonTimestamp() string {
 	if Config.NoTimestamp {
 		return ""
-	} else {
-		return fmt.Sprintf("\"ts\":%d,", TimeToTs(time.Now()))
 	}
+	return fmt.Sprintf("\"ts\":%d,", TimeToTS(time.Now()))
 }
 
 func logPrintf(lvl Level, format string, rest ...interface{}) {
 	if !Log(lvl) {
 		return
 	}
-	if Config.LogFileAndLine {
+	if Config.LogFileAndLine { //nolint:nestif
 		_, file, line, _ := runtime.Caller(2)
 		file = file[strings.LastIndex(file, "/")+1:]
 		if Config.Structured {

@@ -171,7 +171,7 @@ func TestLoggerJSON(t *testing.T) {
 	}
 	_ = w.Flush()
 	actual := b.String()
-	e := LogEntry{}
+	e := JSONEntry{}
 	err := json.Unmarshal([]byte(actual), &e)
 	t.Logf("got: %s -> %#v", actual, e)
 	if err != nil {
@@ -213,7 +213,7 @@ func TestLoggerJSONNoTimestampNoFilename(t *testing.T) {
 	Critf("Test Critf")
 	_ = w.Flush()
 	actual := b.String()
-	e := LogEntry{}
+	e := JSONEntry{}
 	err := json.Unmarshal([]byte(actual), &e)
 	t.Logf("got: %s -> %#v", actual, e)
 	if err != nil {
@@ -231,18 +231,18 @@ func TestLoggerJSONNoTimestampNoFilename(t *testing.T) {
 	if e.Line != 0 {
 		t.Errorf("unexpected line %d", e.Line)
 	}
-	if e.Ts != 0 {
-		t.Errorf("unexpected time should be absent, got %v %v", e.Ts, e.Time())
+	if e.TS != 0 {
+		t.Errorf("unexpected time should be absent, got %v %v", e.TS, e.Time())
 	}
 }
 
-// Test that TimeToTs and Time() are inverse of one another
+// Test that TimeToTs and Time() are inverse of one another.
 func TestTimeToTs(t *testing.T) {
 	// tight loop to get different times, at highest resolution
 	for i := 0; i < 1000; i++ {
 		now := time.Now()
-		int64Ts := TimeToTs(now)
-		e := LogEntry{Ts: int64Ts}
+		int64Ts := TimeToTS(now)
+		e := JSONEntry{TS: int64Ts}
 		inv := e.Time()
 		// Round to microsecond because that's the resolution of the timestamp
 		// (note that on a mac for instance, there is no nanosecond resolution anyway)
@@ -257,7 +257,7 @@ func microsecondResolution(t time.Time) time.Time {
 	return t.Truncate(1 * time.Microsecond)
 }
 
-// concurrency test, make sure json aren't mixed up
+// concurrency test, make sure json aren't mixed up.
 func TestLoggerJSONConcurrency(t *testing.T) {
 	// Setup
 	var b bytes.Buffer
@@ -290,7 +290,7 @@ func TestLoggerJSONConcurrency(t *testing.T) {
 			continue
 		}
 		count++
-		e := LogEntry{}
+		e := JSONEntry{}
 		err := json.Unmarshal([]byte(line), &e)
 		if err != nil {
 			t.Errorf("unexpected JSON deserialization error on line %d %v for %q", count, err, line)
