@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -254,6 +255,50 @@ func TestTimeToTs(t *testing.T) {
 func microsecondResolution(t time.Time) time.Time {
 	// Truncate and not Round because that's what UnixMicro does (indirectly).
 	return t.Truncate(1 * time.Microsecond)
+}
+
+// concurrency test, make sure json aren't mixed up
+func TestLoggerJSONConcurrency(t *testing.T) {
+	// Setup
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	SetLogLevel(LevelByName("Verbose"))
+	Config.LogFileAndLine = true
+	Config.NoTimestamp = true
+	Config.Structured = true
+	SetOutput(w)
+	// Start of the actual test
+	var wg sync.WaitGroup
+	wg.Add(10)
+	for i := 0; i < 10; i++ {
+		go func(i int) {
+			for j := 0; j < 100; j++ {
+				Infof("Test from %d: %d", i, j)
+			}
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+	_ = w.Flush()
+	actual := b.String()
+	t.Logf("got: %s", actual)
+	// Check it all deserializes to JSON correctly and we get the expected number of lines
+	count := 0
+	for _, line := range strings.Split(actual, "\n") {
+		if count == 1000 && line == "" {
+			// last line is empty
+			continue
+		}
+		count++
+		e := LogEntry{}
+		err := json.Unmarshal([]byte(line), &e)
+		if err != nil {
+			t.Errorf("unexpected JSON deserialization error on line %d %v for %q", count, err, line)
+		}
+	}
+	if count != 1000 {
+		t.Errorf("unexpected number of lines %d", count)
+	}
 }
 
 func TestLogFatal(t *testing.T) {

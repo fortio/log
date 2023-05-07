@@ -28,6 +28,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -271,9 +272,12 @@ func Logf(lvl Level, format string, rest ...interface{}) {
 
 // Used when doing our own logging writing, in structured mode.
 var jsonWriter io.Writer = os.Stderr
+var jsonWriterMutex sync.Mutex
 
 func jsonWrite(msg string) {
-	jsonWriter.Write([]byte(msg))
+	jsonWriterMutex.Lock()
+	_, _ = jsonWriter.Write([]byte(msg)) // if we get errors while logging... can't quite ... log errors
+	jsonWriterMutex.Unlock()
 }
 
 func TimeToTs(t time.Time) int64 {
