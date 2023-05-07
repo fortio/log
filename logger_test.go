@@ -189,10 +189,11 @@ func TestLoggerJSON(t *testing.T) {
 		t.Errorf("unexpected line %d", e.Line)
 	}
 	ts := e.Time()
+	now = microsecondResolution(now) // truncates so can't be after ts
 	if now.After(ts) {
 		t.Errorf("unexpected time %v is after %v", now, ts)
 	}
-	if ts.Sub(now) > 1*time.Second {
+	if ts.Sub(now) > 100*time.Millisecond {
 		t.Errorf("unexpected time %v is > 1sec after %v", ts, now)
 	}
 }
@@ -244,10 +245,15 @@ func TestTimeToTs(t *testing.T) {
 		inv := e.Time()
 		// Round to microsecond because that's the resolution of the timestamp
 		// (note that on a mac for instance, there is no nanosecond resolution anyway)
-		if !now.Round(1 * time.Microsecond).Equal(inv.Round(1 * time.Microsecond)) {
+		if !microsecondResolution(now).Equal(inv) {
 			t.Fatalf("unexpected time %v != %v (%d)", now, inv, int64Ts)
 		}
 	}
+}
+
+func microsecondResolution(t time.Time) time.Time {
+	// Truncate and not Round because that's what UnixMicro does (indirectly).
+	return t.Truncate(1 * time.Microsecond)
 }
 
 func TestLogFatal(t *testing.T) {
