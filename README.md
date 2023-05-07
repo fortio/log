@@ -30,3 +30,7 @@ log.LogRequest(r, "some info")
 ```
 
 See the `Config` object for options like whether to include line number and file name of caller or not etc
+
+New since 1.4 server logging (as used in [fortio.org/scli](https://pkg.go.dev/fortio.org/scli#ServerMain) for instance) is now structured (json), client logging (as setup by [fortio.org/cli](https://pkg.go.dev/fortio.org/scli#ServerMain) remains as before.
+
+One can also revert server to not be JSON through config.

@@ -17,6 +17,7 @@ package log // import "fortio.org/fortio/log"
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"errors"
 	"flag"
 	"log"
@@ -24,6 +25,7 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 )
 
 // leave this test first/where it is as it relies on line number not changing.
@@ -32,17 +34,41 @@ func TestLoggerFilenameLine(t *testing.T) {
 	on := true
 	Config.LogFileAndLine = on
 	Config.LogPrefix = "-prefix-"
+	Config.Structured = false
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
 	SetOutput(w)
 	SetFlags(0)
 	SetLogLevel(Debug)
 	if LogDebug() {
-		Debugf("test") // line 41
+		Debugf("test") // line 44
 	}
 	w.Flush()
 	actual := b.String()
-	expected := "D logger_test.go:41-prefix-test\n"
+	expected := "D logger_test.go:44-prefix-test\n"
+	if actual != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
+	}
+}
+
+// leave this test second/where it is as it relies on line number not changing.
+func TestLoggerFilenameLineJSON(t *testing.T) {
+	SetLogLevel(Debug) // make sure it's already debug when we capture
+	on := true
+	Config.LogFileAndLine = on
+	Config.LogPrefix = "-not used-"
+	Config.Structured = true
+	Config.NoTimestamp = true
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	SetOutput(w)
+	SetLogLevel(Debug)
+	if LogDebug() {
+		Debugf("a test") // line 67
+	}
+	w.Flush()
+	actual := b.String()
+	expected := `{"level":"dbug","file":"logger_test.go","line":67,"msg":"a test"}` + "\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
 	}
@@ -71,7 +97,8 @@ func TestLogger1(t *testing.T) {
 	SetLogLevel(Info) // reset from other tests
 	Config.LogFileAndLine = false
 	Config.LogPrefix = ""
-	log.SetOutput(w)
+	Config.Structured = false
+	SetOutput(w)
 	log.SetFlags(0)
 	// Start of the actual test
 	SetLogLevel(LevelByName("Verbose"))
@@ -123,6 +150,103 @@ func TestLogger1(t *testing.T) {
 	actual := b.String()
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
+	}
+}
+
+func TestLoggerJSON(t *testing.T) {
+	// Setup
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	SetLogLevel(LevelByName("Verbose"))
+	Config.LogFileAndLine = true
+	Config.LogPrefix = "no used"
+	Config.Structured = true
+	Config.NoTimestamp = false
+	SetOutput(w)
+	// Start of the actual test
+	now := time.Now()
+	if LogVerbose() {
+		LogVf("Test Verbose %d", 0) // Should show
+	}
+	_ = w.Flush()
+	actual := b.String()
+	e := LogEntry{}
+	err := json.Unmarshal([]byte(actual), &e)
+	t.Logf("got: %s -> %#v", actual, e)
+	if err != nil {
+		t.Errorf("unexpected JSON deserialization error %v for %q", err, actual)
+	}
+	if e.Level != "trace" {
+		t.Errorf("unexpected level %s", e.Level)
+	}
+	if e.Msg != "Test Verbose 0" {
+		t.Errorf("unexpected body %s", e.Msg)
+	}
+	if e.File != "logger_test.go" {
+		t.Errorf("unexpected file %q", e.File)
+	}
+	if e.Line < 150 || e.Line > 200 {
+		t.Errorf("unexpected line %d", e.Line)
+	}
+	ts := e.Time()
+	if now.After(ts) {
+		t.Errorf("unexpected time %v is after %v", now, ts)
+	}
+	if ts.Sub(now) > 1*time.Second {
+		t.Errorf("unexpected time %v is > 1sec after %v", ts, now)
+	}
+}
+
+func TestLoggerJSONNoTimestampNoFilename(t *testing.T) {
+	// Setup
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	SetLogLevel(LevelByName("Verbose"))
+	Config.LogFileAndLine = false
+	Config.LogPrefix = "no used"
+	Config.Structured = true
+	Config.NoTimestamp = true
+	SetOutput(w)
+	// Start of the actual test
+	Critf("Test Critf")
+	_ = w.Flush()
+	actual := b.String()
+	e := LogEntry{}
+	err := json.Unmarshal([]byte(actual), &e)
+	t.Logf("got: %s -> %#v", actual, e)
+	if err != nil {
+		t.Errorf("unexpected JSON deserialization error %v for %q", err, actual)
+	}
+	if e.Level != "crit" {
+		t.Errorf("unexpected level %s", e.Level)
+	}
+	if e.Msg != "Test Critf" {
+		t.Errorf("unexpected body %s", e.Msg)
+	}
+	if e.File != "" {
+		t.Errorf("unexpected file %q", e.File)
+	}
+	if e.Line != 0 {
+		t.Errorf("unexpected line %d", e.Line)
+	}
+	if e.Ts != 0 {
+		t.Errorf("unexpected time should be absent, got %v %v", e.Ts, e.Time())
+	}
+}
+
+// Test that TimeToTs and Time() are inverse of one another
+func TestTimeToTs(t *testing.T) {
+	// tight loop to get different times, at highest resolution
+	for i := 0; i < 1000; i++ {
+		now := time.Now()
+		int64Ts := TimeToTs(now)
+		e := LogEntry{Ts: int64Ts}
+		inv := e.Time()
+		// Round to microsecond because that's the resolution of the timestamp
+		// (note that on a mac for instance, there is no nanosecond resolution anyway)
+		if !now.Round(1 * time.Microsecond).Equal(inv.Round(1 * time.Microsecond)) {
+			t.Fatalf("unexpected time %v != %v (%d)", now, inv, int64Ts)
+		}
 	}
 }
 
