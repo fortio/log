@@ -86,7 +86,7 @@ var (
 	levelToStrM   map[string]Level
 	levelInternal int32
 	// Used for JSON logging.
-	LevelToStructered = []string{
+	LevelToStructured = []string{
 		// matching https://github.com/grafana/grafana/blob/main/docs/sources/explore/logs-integration.md
 		// adding the "" around to save processing when generating json. using short names to save some bytes.
 		"\"dbug\"",
@@ -119,6 +119,8 @@ type JSONEntry struct {
 	File  string
 	Line  int
 	Msg   string
+	// + additional optional fields
+	// See https://go.dev/play/p/oPK5vyUH2tf for a possibility
 }
 
 // LogEntry Ts to time.Time conversion.
@@ -302,14 +304,14 @@ func logPrintf(lvl Level, format string, rest ...interface{}) {
 		file = file[strings.LastIndex(file, "/")+1:]
 		if Config.Structured {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"file\":%q,\"line\":%d,\"msg\":%q}\n",
-				jsonTimestamp(), LevelToStructered[lvl], file, line, fmt.Sprintf(format, rest...)))
+				jsonTimestamp(), LevelToStructured[lvl], file, line, fmt.Sprintf(format, rest...)))
 		} else {
 			log.Print(LevelToStrA[lvl][0:1], " ", file, ":", line, Config.LogPrefix, fmt.Sprintf(format, rest...))
 		}
 	} else {
 		if Config.Structured {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"msg\":%q}\n",
-				jsonTimestamp(), LevelToStructered[lvl], fmt.Sprintf(format, rest...)))
+				jsonTimestamp(), LevelToStructured[lvl], fmt.Sprintf(format, rest...)))
 		} else {
 			log.Print(LevelToStrA[lvl][0:1], " ", Config.LogPrefix, fmt.Sprintf(format, rest...))
 		}
@@ -417,4 +419,72 @@ func (l *loggerShm) Printf(format string, rest ...interface{}) {
 func Logger() LoggerI {
 	logger := loggerShm{}
 	return &logger
+}
+
+// Somewhat slog compatible/style logger
+
+type KeyVal struct {
+	Key   string
+	Value fmt.Stringer
+}
+
+type StringValue string
+
+func (s StringValue) String() string {
+	return string(s)
+}
+
+func Str(key, value string) KeyVal {
+	return KeyVal{Key: key, Value: StringValue(value)}
+}
+
+type ValueTypes interface{ any }
+
+type ValueType[T ValueTypes] struct {
+	Val T
+}
+
+func (v *ValueType[T]) String() string {
+	return fmt.Sprint(v.Val)
+}
+
+func Attr[T ValueTypes](key string, value T) KeyVal {
+	return KeyVal{
+		Key:   key,
+		Value: &ValueType[T]{Val: value},
+	}
+}
+
+func LogS(lvl Level, msg string, attrs ...KeyVal) {
+	if !Log(lvl) {
+		return
+	}
+	buf := strings.Builder{}
+	var format string
+	if Config.Structured {
+		format = ",%q:%q"
+	} else {
+		format = ", %s=%s"
+	}
+	for _, attr := range attrs {
+		buf.WriteString(fmt.Sprintf(format, attr.Key, attr.Value.String()))
+	}
+	if Config.LogFileAndLine { //nolint:nestif
+		_, file, line, _ := runtime.Caller(1)
+		file = file[strings.LastIndex(file, "/")+1:]
+		if Config.Structured {
+			// TODO share code with log.Printf yet without extra locks or allocations/buffers?
+			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"file\":%q,\"line\":%d,\"msg\":%q%s}\n",
+				jsonTimestamp(), LevelToStructured[lvl], file, line, msg, buf.String()))
+		} else {
+			log.Print(LevelToStrA[lvl][0:1], " ", file, ":", line, Config.LogPrefix, msg, buf.String())
+		}
+	} else {
+		if Config.Structured {
+			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"msg\":%q%s}\n",
+				jsonTimestamp(), LevelToStructured[lvl], msg, buf.String()))
+		} else {
+			log.Print(LevelToStrA[lvl][0:1], " ", Config.LogPrefix, msg, buf.String())
+		}
+	}
 }

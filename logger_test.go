@@ -199,6 +199,50 @@ func TestLoggerJSON(t *testing.T) {
 	}
 }
 
+func Test_LogS_JSON(t *testing.T) {
+	// Setup
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	SetLogLevel(LevelByName("Verbose"))
+	Config.LogFileAndLine = true
+	Config.Structured = true
+	Config.NoTimestamp = false
+	SetOutput(w)
+	// Start of the actual test
+	now := time.Now()
+	value2 := 42
+	value3 := 3.14
+	LogS(Verbose, "Test Verbose", Str("key1", "value 1"), Attr("key2", value2), Attr("key3", value3))
+	_ = w.Flush()
+	actual := b.String()
+	e := JSONEntry{}
+	err := json.Unmarshal([]byte(actual), &e)
+	t.Logf("got: %s -> %#v", actual, e)
+	if err != nil {
+		t.Errorf("unexpected JSON deserialization error %v for %q", err, actual)
+	}
+	if e.Level != "trace" {
+		t.Errorf("unexpected level %s", e.Level)
+	}
+	if e.Msg != "Test Verbose" {
+		t.Errorf("unexpected body %s", e.Msg)
+	}
+	if e.File != "logger_test.go" {
+		t.Errorf("unexpected file %q", e.File)
+	}
+	if e.Line < 200 || e.Line > 250 {
+		t.Errorf("unexpected line %d", e.Line)
+	}
+	ts := e.Time()
+	now = microsecondResolution(now) // truncates so can't be after ts
+	if now.After(ts) {
+		t.Errorf("unexpected time %v is after %v", now, ts)
+	}
+	if ts.Sub(now) > 100*time.Millisecond {
+		t.Errorf("unexpected time %v is > 1sec after %v", ts, now)
+	}
+}
+
 func TestLoggerJSONNoTimestampNoFilename(t *testing.T) {
 	// Setup
 	var b bytes.Buffer
