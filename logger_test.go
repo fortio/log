@@ -42,11 +42,11 @@ func TestLoggerFilenameLine(t *testing.T) {
 	SetFlags(0)
 	SetLogLevel(Debug)
 	if LogDebug() {
-		Debugf("test") // line 44
+		Debugf("test") // line 45
 	}
 	w.Flush()
 	actual := b.String()
-	expected := "D logger_test.go:44-prefix-test\n"
+	expected := "D logger_test.go:45-prefix-test\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
 	}
@@ -65,11 +65,11 @@ func TestLoggerFilenameLineJSON(t *testing.T) {
 	SetOutput(w)
 	SetLogLevel(Debug)
 	if LogDebug() {
-		Debugf("a test") // line 67
+		Debugf("a test") // line 68
 	}
 	w.Flush()
 	actual := b.String()
-	expected := `{"level":"dbug","file":"logger_test.go","line":67,"msg":"a test"}` + "\n"
+	expected := `{"level":"dbug","file":"logger_test.go","line":68,"msg":"a test"}` + "\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
 	}
