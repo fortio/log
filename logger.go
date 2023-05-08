@@ -241,7 +241,7 @@ func setLogLevel(lvl Level, logChange bool) Level {
 	}
 	if lvl != prev {
 		if logChange {
-			logPrintf(Info, "Log level is now %d %s (was %d %s)\n", lvl, lvl.String(), prev, prev.String())
+			logPrintf(Info, "Log level is now %d %s (was %d %s)", lvl, lvl.String(), prev, prev.String())
 		}
 		setLevel(lvl)
 	}
