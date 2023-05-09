@@ -35,7 +35,7 @@ func TestLoggerFilenameLine(t *testing.T) {
 	on := true
 	Config.LogFileAndLine = on
 	Config.LogPrefix = "-prefix-"
-	Config.Structured = false
+	Config.JSON = false
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
 	SetOutput(w)
@@ -58,7 +58,7 @@ func TestLoggerFilenameLineJSON(t *testing.T) {
 	on := true
 	Config.LogFileAndLine = on
 	Config.LogPrefix = "-not used-"
-	Config.Structured = true
+	Config.JSON = true
 	Config.NoTimestamp = true
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
@@ -81,7 +81,7 @@ func Test_LogS_JSON_no_json_with_filename(t *testing.T) {
 	w := bufio.NewWriter(&b)
 	SetLogLevel(LevelByName("Warning"))
 	Config.LogFileAndLine = true
-	Config.Structured = false
+	Config.JSON = false
 	Config.NoTimestamp = false
 	Config.LogPrefix = "-bar-"
 	log.SetFlags(0)
@@ -120,7 +120,7 @@ func TestLogger1(t *testing.T) {
 	SetLogLevel(Info) // reset from other tests
 	Config.LogFileAndLine = false
 	Config.LogPrefix = ""
-	Config.Structured = false
+	Config.JSON = false
 	SetOutput(w)
 	log.SetFlags(0)
 	// Start of the actual test
@@ -183,7 +183,7 @@ func TestLoggerJSON(t *testing.T) {
 	SetLogLevel(LevelByName("Verbose"))
 	Config.LogFileAndLine = true
 	Config.LogPrefix = "no used"
-	Config.Structured = true
+	Config.JSON = true
 	Config.NoTimestamp = false
 	SetOutput(w)
 	// Start of the actual test
@@ -227,7 +227,7 @@ func Test_LogS_JSON(t *testing.T) {
 	w := bufio.NewWriter(&b)
 	SetLogLevel(LevelByName("Verbose"))
 	Config.LogFileAndLine = true
-	Config.Structured = true
+	Config.JSON = true
 	Config.NoTimestamp = false
 	SetOutput(w)
 	// Start of the actual test
@@ -290,7 +290,7 @@ func Test_LogS_JSON_no_file(t *testing.T) {
 	w := bufio.NewWriter(&b)
 	SetLogLevel(LevelByName("Warning"))
 	Config.LogFileAndLine = false
-	Config.Structured = true
+	Config.JSON = true
 	Config.NoTimestamp = false
 	SetOutput(w)
 	// Start of the actual test
@@ -317,7 +317,7 @@ func Test_LogS_JSON_no_json_no_file(t *testing.T) {
 	w := bufio.NewWriter(&b)
 	SetLogLevel(LevelByName("Warning"))
 	Config.LogFileAndLine = false
-	Config.Structured = false
+	Config.JSON = false
 	Config.NoTimestamp = false
 	Config.LogPrefix = "-foo-"
 	log.SetFlags(0)
@@ -340,7 +340,7 @@ func TestLoggerJSONNoTimestampNoFilename(t *testing.T) {
 	SetLogLevel(LevelByName("Verbose"))
 	Config.LogFileAndLine = false
 	Config.LogPrefix = "no used"
-	Config.Structured = true
+	Config.JSON = true
 	Config.NoTimestamp = true
 	SetOutput(w)
 	// Start of the actual test
@@ -399,7 +399,7 @@ func TestLoggerJSONConcurrency(t *testing.T) {
 	SetLogLevel(LevelByName("Verbose"))
 	Config.LogFileAndLine = true
 	Config.NoTimestamp = true
-	Config.Structured = true
+	Config.JSON = true
 	SetOutput(w)
 	// Start of the actual test
 	var wg sync.WaitGroup

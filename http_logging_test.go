@@ -15,7 +15,7 @@ import (
 func TestLogRequest(t *testing.T) {
 	SetLogLevel(Verbose) // make sure it's already debug when we capture
 	Config.LogFileAndLine = false
-	Config.Structured = true
+	Config.JSON = true
 	nowFunction = func() time.Time { return time.Unix(1234567890, 0) }
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
@@ -41,7 +41,7 @@ func TestLogRequest(t *testing.T) {
 func TestLogRequestNoLog(t *testing.T) {
 	SetLogLevel(Warning) // make sure it's already debug when we capture
 	Config.LogFileAndLine = false
-	Config.Structured = true
+	Config.JSON = true
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
 	SetOutput(w)

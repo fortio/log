@@ -48,6 +48,7 @@ func AppendTLSInfoAttrs(attrs []KeyVal, r *http.Request) []KeyVal {
 
 // LogRequest logs the incoming request, TLSInfo,
 // including headers when loglevel is verbose.
+// additional key:value pairs can be passed as extraAttributes.
 func LogRequest(r *http.Request, msg string, extraAttributes ...KeyVal) {
 	if !Log(Info) {
 		return

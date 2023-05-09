@@ -42,3 +42,5 @@ In JSON mode the output looks like this
 Which can be converted to JSONEntry but is also a fixed, optimized format (ie ts is always first etc)
 
 The timestamp `ts` is in microseconds since epoch (golang UnixMicro())
+
+Optional additional `KeyValue` pairs can be added to the base structure using the new `log.LogS` or passed to `log.LogRequest`.

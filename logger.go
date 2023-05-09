@@ -54,7 +54,7 @@ type LogConfig struct {
 	LogFileAndLine bool      // Logs filename and line number of callers to log.
 	FatalPanics    bool      // If true, log.Fatalf will panic (stack trace) instead of just exit 1
 	FatalExit      func(int) // Function to call upon log.Fatalf. e.g. os.Exit.
-	Structured     bool      // If true, log in JSON format instead of text.
+	JSON           bool      // If true, log in structured JSON format instead of text.
 	NoTimestamp    bool      // If true, don't log timestamp in json.
 }
 
@@ -67,7 +67,7 @@ func DefaultConfig() *LogConfig {
 		LogFileAndLine: true,
 		FatalPanics:    true,
 		FatalExit:      os.Exit,
-		Structured:     true,
+		JSON:           true,
 	}
 }
 
@@ -86,7 +86,7 @@ var (
 	levelToStrM   map[string]Level
 	levelInternal int32
 	// Used for JSON logging.
-	LevelToStructured = []string{
+	LevelToJSON = []string{
 		// matching https://github.com/grafana/grafana/blob/main/docs/sources/explore/logs-integration.md
 		// adding the "" around to save processing when generating json. using short names to save some bytes.
 		"\"dbug\"",
@@ -107,10 +107,10 @@ func SetDefaultsForClientTools() {
 	Config.LogPrefix = ""
 	Config.LogFileAndLine = false
 	Config.FatalPanics = false
-	Config.Structured = false
+	Config.JSON = false
 }
 
-// JSONEntry is the logical format of the JSON [Config.Structured] output mode.
+// JSONEntry is the logical format of the JSON [Config.JSON] output mode.
 // While that serialization of is custom in order to be cheap, it maps to the following
 // structure.
 type JSONEntry struct {
@@ -273,7 +273,7 @@ func Logf(lvl Level, format string, rest ...interface{}) {
 	logPrintf(lvl, format, rest...)
 }
 
-// Used when doing our own logging writing, in structured mode.
+// Used when doing our own logging writing, in JSON/structured mode.
 var (
 	jsonWriter      io.Writer = os.Stderr
 	jsonWriterMutex sync.Mutex
@@ -305,16 +305,16 @@ func logPrintf(lvl Level, format string, rest ...interface{}) {
 	if Config.LogFileAndLine { //nolint:nestif
 		_, file, line, _ := runtime.Caller(2)
 		file = file[strings.LastIndex(file, "/")+1:]
-		if Config.Structured {
+		if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"file\":%q,\"line\":%d,\"msg\":%q}\n",
-				jsonTimestamp(), LevelToStructured[lvl], file, line, fmt.Sprintf(format, rest...)))
+				jsonTimestamp(), LevelToJSON[lvl], file, line, fmt.Sprintf(format, rest...)))
 		} else {
 			log.Print(LevelToStrA[lvl][0:1], " ", file, ":", line, Config.LogPrefix, fmt.Sprintf(format, rest...))
 		}
 	} else {
-		if Config.Structured {
+		if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"msg\":%q}\n",
-				jsonTimestamp(), LevelToStructured[lvl], fmt.Sprintf(format, rest...)))
+				jsonTimestamp(), LevelToJSON[lvl], fmt.Sprintf(format, rest...)))
 		} else {
 			log.Print(LevelToStrA[lvl][0:1], " ", Config.LogPrefix, fmt.Sprintf(format, rest...))
 		}
@@ -464,7 +464,7 @@ func LogS(lvl Level, msg string, attrs ...KeyVal) {
 	}
 	buf := strings.Builder{}
 	var format string
-	if Config.Structured {
+	if Config.JSON {
 		format = ",%q:%q"
 	} else {
 		format = ", %s=%s"
@@ -475,17 +475,17 @@ func LogS(lvl Level, msg string, attrs ...KeyVal) {
 	if Config.LogFileAndLine { //nolint:nestif
 		_, file, line, _ := runtime.Caller(1)
 		file = file[strings.LastIndex(file, "/")+1:]
-		if Config.Structured {
+		if Config.JSON {
 			// TODO share code with log.Printf yet without extra locks or allocations/buffers?
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"file\":%q,\"line\":%d,\"msg\":%q%s}\n",
-				jsonTimestamp(), LevelToStructured[lvl], file, line, msg, buf.String()))
+				jsonTimestamp(), LevelToJSON[lvl], file, line, msg, buf.String()))
 		} else {
 			log.Print(LevelToStrA[lvl][0:1], " ", file, ":", line, Config.LogPrefix, msg, buf.String())
 		}
 	} else {
-		if Config.Structured {
+		if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"msg\":%q%s}\n",
-				jsonTimestamp(), LevelToStructured[lvl], msg, buf.String()))
+				jsonTimestamp(), LevelToJSON[lvl], msg, buf.String()))
 		} else {
 			log.Print(LevelToStrA[lvl][0:1], " ", Config.LogPrefix, msg, buf.String())
 		}
