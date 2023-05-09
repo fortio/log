@@ -289,13 +289,11 @@ func TimeToTS(t time.Time) int64 {
 	return t.UnixMicro()
 }
 
-var nowFunction = time.Now // for setting a fixed time for tests
-
 func jsonTimestamp() string {
 	if Config.NoTimestamp {
 		return ""
 	}
-	return fmt.Sprintf("\"ts\":%d,", TimeToTS(nowFunction()))
+	return fmt.Sprintf("\"ts\":%d,", TimeToTS(time.Now()))
 }
 
 func logPrintf(lvl Level, format string, rest ...interface{}) {
