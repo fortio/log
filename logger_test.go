@@ -75,6 +75,28 @@ func TestLoggerFilenameLineJSON(t *testing.T) {
 	}
 }
 
+func Test_LogS_JSON_no_json_with_filename(t *testing.T) {
+	// Setup
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	SetLogLevel(LevelByName("Warning"))
+	Config.LogFileAndLine = true
+	Config.Structured = false
+	Config.NoTimestamp = false
+	Config.LogPrefix = "-bar-"
+	log.SetFlags(0)
+	SetOutput(w)
+	// Start of the actual test
+	LogS(Verbose, "This won't show")
+	LogS(Warning, "This will show", Str("key1", "value 1"), Attr("key2", 42)) // line 91
+	_ = w.Flush()
+	actual := b.String()
+	expected := "W logger_test.go:91-bar-This will show, key1=value 1, key2=42\n"
+	if actual != expected {
+		t.Errorf("got %q expected %q", actual, expected)
+	}
+}
+
 func TestSetLevel(t *testing.T) {
 	_ = SetLogLevel(Info)
 	err := SetLogLevelStr("debug")
@@ -240,6 +262,74 @@ func Test_LogS_JSON(t *testing.T) {
 	}
 	if ts.Sub(now) > 100*time.Millisecond {
 		t.Errorf("unexpected time %v is > 1sec after %v", ts, now)
+	}
+	// check extra attributes
+	var tmp map[string]interface{}
+	err = json.Unmarshal([]byte(actual), &tmp)
+	if err != nil {
+		t.Errorf("unexpected JSON deserialization 2 error %v for %q", err, actual)
+	}
+	if tmp["key1"] != "value 1" {
+		t.Errorf("unexpected key1 %v", tmp["key1"])
+	}
+	// it all gets converted to %q quoted strings - tbd if that's good or bad
+	if tmp["key2"] != "42" {
+		t.Errorf("unexpected key2 %v", tmp["key2"])
+	}
+	if tmp["key3"] != "3.14" {
+		t.Errorf("unexpected key3 %v", tmp["key3"])
+	}
+	if tmp["file"] != "logger_test.go" {
+		t.Errorf("unexpected file %v", tmp["file"])
+	}
+}
+
+func Test_LogS_JSON_no_file(t *testing.T) {
+	// Setup
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	SetLogLevel(LevelByName("Warning"))
+	Config.LogFileAndLine = false
+	Config.Structured = true
+	Config.NoTimestamp = false
+	SetOutput(w)
+	// Start of the actual test
+	LogS(Verbose, "This won't show")
+	LogS(Warning, "This will show", Attr("key1", "value 1"))
+	_ = w.Flush()
+	actual := b.String()
+	var tmp map[string]interface{}
+	err := json.Unmarshal([]byte(actual), &tmp)
+	if err != nil {
+		t.Errorf("unexpected JSON deserialization error %v for %q", err, actual)
+	}
+	if tmp["key1"] != "value 1" {
+		t.Errorf("unexpected key1 %v", tmp["key1"])
+	}
+	if tmp["file"] != nil {
+		t.Errorf("unexpected file %v", tmp["file"])
+	}
+}
+
+func Test_LogS_JSON_no_json_no_file(t *testing.T) {
+	// Setup
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	SetLogLevel(LevelByName("Warning"))
+	Config.LogFileAndLine = false
+	Config.Structured = false
+	Config.NoTimestamp = false
+	Config.LogPrefix = "-foo-"
+	log.SetFlags(0)
+	SetOutput(w)
+	// Start of the actual test
+	LogS(Verbose, "This won't show")
+	LogS(Warning, "This will show", Str("key1", "value 1"), Attr("key2", 42))
+	_ = w.Flush()
+	actual := b.String()
+	expected := "W -foo-This will show, key1=value 1, key2=42\n"
+	if actual != expected {
+		t.Errorf("got %q expected %q", actual, expected)
 	}
 }
 

@@ -120,7 +120,8 @@ type JSONEntry struct {
 	Line  int
 	Msg   string
 	// + additional optional fields
-	// See https://go.dev/play/p/oPK5vyUH2tf for a possibility
+	// See https://go.dev/play/p/oPK5vyUH2tf for a possibility (using https://github.com/devnw/ajson )
+	// or https://go.dev/play/p/H0RPmuc3dzv (using github.com/mitchellh/mapstructure)
 }
 
 // LogEntry Ts to time.Time conversion.
