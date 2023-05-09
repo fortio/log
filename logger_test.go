@@ -29,6 +29,8 @@ import (
 	"time"
 )
 
+const thisFilename = "logger_test.go"
+
 // leave this test first/where it is as it relies on line number not changing.
 func TestLoggerFilenameLine(t *testing.T) {
 	SetLogLevel(Debug) // make sure it's already debug when we capture
@@ -42,11 +44,11 @@ func TestLoggerFilenameLine(t *testing.T) {
 	SetFlags(0)
 	SetLogLevel(Debug)
 	if LogDebug() {
-		Debugf("test") // line 45
+		Debugf("test") // line 47
 	}
 	w.Flush()
 	actual := b.String()
-	expected := "D logger_test.go:45-prefix-test\n"
+	expected := "D logger_test.go:47-prefix-test\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
 	}
@@ -65,11 +67,11 @@ func TestLoggerFilenameLineJSON(t *testing.T) {
 	SetOutput(w)
 	SetLogLevel(Debug)
 	if LogDebug() {
-		Debugf("a test") // line 68
+		Debugf("a test") // line 70
 	}
 	w.Flush()
 	actual := b.String()
-	expected := `{"level":"dbug","file":"logger_test.go","line":68,"msg":"a test"}` + "\n"
+	expected := `{"level":"dbug","file":"` + thisFilename + `","line":70,"msg":"a test"}` + "\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
 	}
@@ -87,11 +89,11 @@ func Test_LogS_JSON_no_json_with_filename(t *testing.T) {
 	log.SetFlags(0)
 	SetOutput(w)
 	// Start of the actual test
-	LogS(Verbose, "This won't show")
-	LogS(Warning, "This will show", Str("key1", "value 1"), Attr("key2", 42)) // line 91
+	S(Verbose, "This won't show")
+	S(Warning, "This will show", Str("key1", "value 1"), Attr("key2", 42)) // line 93
 	_ = w.Flush()
 	actual := b.String()
-	expected := "W logger_test.go:91-bar-This will show, key1=value 1, key2=42\n"
+	expected := "W logger_test.go:93-bar-This will show, key1=value 1, key2=42\n"
 	if actual != expected {
 		t.Errorf("got %q expected %q", actual, expected)
 	}
@@ -205,7 +207,7 @@ func TestLoggerJSON(t *testing.T) {
 	if e.Msg != "Test Verbose 0" {
 		t.Errorf("unexpected body %s", e.Msg)
 	}
-	if e.File != "logger_test.go" {
+	if e.File != thisFilename {
 		t.Errorf("unexpected file %q", e.File)
 	}
 	if e.Line < 150 || e.Line > 200 {
@@ -234,7 +236,7 @@ func Test_LogS_JSON(t *testing.T) {
 	now := time.Now()
 	value2 := 42
 	value3 := 3.14
-	LogS(Verbose, "Test Verbose", Str("key1", "value 1"), Attr("key2", value2), Attr("key3", value3))
+	S(Verbose, "Test Verbose", Str("key1", "value 1"), Attr("key2", value2), Attr("key3", value3))
 	_ = w.Flush()
 	actual := b.String()
 	e := JSONEntry{}
@@ -249,7 +251,7 @@ func Test_LogS_JSON(t *testing.T) {
 	if e.Msg != "Test Verbose" {
 		t.Errorf("unexpected body %s", e.Msg)
 	}
-	if e.File != "logger_test.go" {
+	if e.File != thisFilename {
 		t.Errorf("unexpected file %q", e.File)
 	}
 	if e.Line < 200 || e.Line > 250 {
@@ -279,7 +281,7 @@ func Test_LogS_JSON(t *testing.T) {
 	if tmp["key3"] != "3.14" {
 		t.Errorf("unexpected key3 %v", tmp["key3"])
 	}
-	if tmp["file"] != "logger_test.go" {
+	if tmp["file"] != thisFilename {
 		t.Errorf("unexpected file %v", tmp["file"])
 	}
 }
@@ -294,8 +296,8 @@ func Test_LogS_JSON_no_file(t *testing.T) {
 	Config.NoTimestamp = false
 	SetOutput(w)
 	// Start of the actual test
-	LogS(Verbose, "This won't show")
-	LogS(Warning, "This will show", Attr("key1", "value 1"))
+	S(Verbose, "This won't show")
+	S(Warning, "This will show", Attr("key1", "value 1"))
 	_ = w.Flush()
 	actual := b.String()
 	var tmp map[string]interface{}
@@ -323,8 +325,8 @@ func Test_LogS_JSON_no_json_no_file(t *testing.T) {
 	log.SetFlags(0)
 	SetOutput(w)
 	// Start of the actual test
-	LogS(Verbose, "This won't show")
-	LogS(Warning, "This will show", Str("key1", "value 1"), Attr("key2", 42))
+	S(Verbose, "This won't show")
+	S(Warning, "This will show", Str("key1", "value 1"), Attr("key2", 42))
 	_ = w.Flush()
 	actual := b.String()
 	expected := "W -foo-This will show, key1=value 1, key2=42\n"

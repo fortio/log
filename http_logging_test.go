@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// note that the real functional test is in fortio/fhttp. and this is mostly for coverage.
+// There is additional functional testing in fortio.org/fortio/fhttp.
 func TestLogRequest(t *testing.T) {
 	SetLogLevel(Verbose) // make sure it's already debug when we capture
 	Config.LogFileAndLine = false
@@ -30,6 +30,7 @@ func TestLogRequest(t *testing.T) {
 	nowFunction = time.Now // restore normal clock (used by other tests)
 	w.Flush()
 	actual := b.String()
+	//nolint: lll
 	expected := `{"ts":1234567890000000,"level":"info","msg":"test1","method":"","url":"<nil>","proto":"","remote_addr":"","header.x-forwarded-proto":"","header.x-forwarded-for":"","user-agent":"","tls":"true","tls.peer_cn":"x\nyz","header.host":"","header.foo":"bar1,bar2"}
 {"ts":1234567890000000,"level":"info","msg":"test2","method":"","url":"<nil>","proto":"","remote_addr":"","header.x-forwarded-proto":"","header.x-forwarded-for":"","user-agent":"","extra1":"v1","extra2":"v2","header.host":""}
 `
@@ -54,7 +55,7 @@ func TestLogRequestNoLog(t *testing.T) {
 	}
 }
 
-// Test for the "old" TLSInfo
+// Test for the "old" TLSInfo.
 func TestTLSInfo(t *testing.T) {
 	h := http.Header{"foo": []string{"bar"}}
 	cert := &x509.Certificate{Subject: pkix.Name{CommonName: "x\nyz"}} // make sure special chars are escaped

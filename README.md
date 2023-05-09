@@ -43,4 +43,4 @@ Which can be converted to JSONEntry but is also a fixed, optimized format (ie ts
 
 The timestamp `ts` is in microseconds since epoch (golang UnixMicro())
 
-Optional additional `KeyValue` pairs can be added to the base structure using the new `log.LogS` or passed to `log.LogRequest`.
+Optional additional `KeyValue` pairs can be added to the base structure using the new `log.S` or passed to `log.LogRequest`.

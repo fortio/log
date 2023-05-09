@@ -458,7 +458,7 @@ func Attr[T ValueTypes](key string, value T) KeyVal {
 	}
 }
 
-func LogS(lvl Level, msg string, attrs ...KeyVal) {
+func S(lvl Level, msg string, attrs ...KeyVal) {
 	if !Log(lvl) {
 		return
 	}

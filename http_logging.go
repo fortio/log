@@ -49,14 +49,18 @@ func AppendTLSInfoAttrs(attrs []KeyVal, r *http.Request) []KeyVal {
 // LogRequest logs the incoming request, TLSInfo,
 // including headers when loglevel is verbose.
 // additional key:value pairs can be passed as extraAttributes.
+//
+//nolint:revive
 func LogRequest(r *http.Request, msg string, extraAttributes ...KeyVal) {
 	if !Log(Info) {
 		return
 	}
-	attr := []KeyVal{Str("method", r.Method), Attr("url", r.URL), Str("proto", r.Proto),
+	attr := []KeyVal{
+		Str("method", r.Method), Attr("url", r.URL), Str("proto", r.Proto),
 		Str("remote_addr", r.RemoteAddr), Str("header.x-forwarded-proto", r.Header.Get("X-Forwarded-Proto")),
 		Str("header.x-forwarded-for", r.Header.Get("X-Forwarded-For")),
-		Str("user-agent", r.Header.Get("User-Agent"))}
+		Str("user-agent", r.Header.Get("User-Agent")),
+	}
 	attr = AppendTLSInfoAttrs(attr, r)
 	attr = append(attr, extraAttributes...)
 	if LogVerbose() {
@@ -66,5 +70,5 @@ func LogRequest(r *http.Request, msg string, extraAttributes ...KeyVal) {
 			attr = append(attr, Str("header."+name, strings.Join(headers, ",")))
 		}
 	}
-	LogS(Info, msg, attr...)
+	S(Info, msg, attr...)
 }
