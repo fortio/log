@@ -30,3 +30,17 @@ log.LogRequest(r, "some info")
 ```
 
 See the `Config` object for options like whether to include line number and file name of caller or not etc
+
+New since 1.4 server logging (as used in [fortio.org/scli](https://pkg.go.dev/fortio.org/scli#ServerMain) for instance) is now structured (json), client logging (as setup by [fortio.org/cli](https://pkg.go.dev/fortio.org/scli#ServerMain) remains as before.
+
+One can also revert server to not be JSON through config.
+
+In JSON mode the output looks like this
+```json
+{"ts":1683504169239557,"level":"info","file":"logger.go","line":221,"msg":"Log level is now 1 Verbose (was 2 Info"}
+```
+Which can be converted to JSONEntry but is also a fixed, optimized format (ie ts is always first etc)
+
+The timestamp `ts` is in microseconds since epoch (golang UnixMicro())
+
+Optional additional `KeyValue` pairs can be added to the base structure using the new `log.S` or passed to `log.LogRequest`.

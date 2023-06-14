@@ -28,7 +28,9 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"sync/atomic"
+	"time"
 )
 
 // Level is the level of logging (0 Debug -> 6 Fatal).
@@ -52,6 +54,8 @@ type LogConfig struct {
 	LogFileAndLine bool      // Logs filename and line number of callers to log.
 	FatalPanics    bool      // If true, log.Fatalf will panic (stack trace) instead of just exit 1
 	FatalExit      func(int) // Function to call upon log.Fatalf. e.g. os.Exit.
+	JSON           bool      // If true, log in structured JSON format instead of text.
+	NoTimestamp    bool      // If true, don't log timestamp in json.
 }
 
 // DefaultConfig() returns the default initial configuration for the logger, best suited
@@ -63,15 +67,36 @@ func DefaultConfig() *LogConfig {
 		LogFileAndLine: true,
 		FatalPanics:    true,
 		FatalExit:      os.Exit,
+		JSON:           true,
 	}
 }
 
 var (
 	Config = DefaultConfig()
 	// Used for dynamic flag setting as strings and validation.
-	LevelToStrA   []string
+	LevelToStrA = []string{
+		"Debug",
+		"Verbose",
+		"Info",
+		"Warning",
+		"Error",
+		"Critical",
+		"Fatal",
+	}
 	levelToStrM   map[string]Level
 	levelInternal int32
+	// Used for JSON logging.
+	LevelToJSON = []string{
+		// matching https://github.com/grafana/grafana/blob/main/docs/sources/explore/logs-integration.md
+		// adding the "" around to save processing when generating json. using short names to save some bytes.
+		"\"dbug\"",
+		"\"trace\"",
+		"\"info\"",
+		"\"warn\"",
+		"\"err\"",
+		"\"crit\"",
+		"\"fatal\"",
+	}
 )
 
 // SetDefaultsForClientTools changes the default value of LogPrefix and LogFileAndLine
@@ -82,20 +107,36 @@ func SetDefaultsForClientTools() {
 	Config.LogPrefix = ""
 	Config.LogFileAndLine = false
 	Config.FatalPanics = false
+	Config.JSON = false
+}
+
+// JSONEntry is the logical format of the JSON [Config.JSON] output mode.
+// While that serialization of is custom in order to be cheap, it maps to the following
+// structure.
+type JSONEntry struct {
+	TS    int64 // in microseconds since epoch (unix micros)
+	Level string
+	File  string
+	Line  int
+	Msg   string
+	// + additional optional fields
+	// See https://go.dev/play/p/oPK5vyUH2tf for a possibility (using https://github.com/devnw/ajson )
+	// or https://go.dev/play/p/H0RPmuc3dzv (using github.com/mitchellh/mapstructure)
+}
+
+// LogEntry Ts to time.Time conversion.
+// The returned time is set UTC to avoid TZ mismatch.
+func (l *JSONEntry) Time() time.Time {
+	const million = int64(1e6)
+	return time.Unix(
+		l.TS/million,        // Microseconds -> Seconds
+		1000*(l.TS%million), // Microseconds -> Nanoseconds
+	)
 }
 
 //nolint:gochecknoinits // needed
 func init() {
 	setLevel(Info) // starting value
-	LevelToStrA = []string{
-		"Debug",
-		"Verbose",
-		"Info",
-		"Warning",
-		"Error",
-		"Critical",
-		"Fatal",
-	}
 	levelToStrM = make(map[string]Level, 2*len(LevelToStrA))
 	for l, name := range LevelToStrA {
 		// Allow both -loglevel Verbose and -loglevel verbose ...
@@ -203,7 +244,7 @@ func setLogLevel(lvl Level, logChange bool) Level {
 	}
 	if lvl != prev {
 		if logChange {
-			logPrintf(Info, "Log level is now %d %s (was %d %s)\n", lvl, lvl.String(), prev, prev.String())
+			logPrintf(Info, "Log level is now %d %s (was %d %s)", lvl, lvl.String(), prev, prev.String())
 		}
 		setLevel(lvl)
 	}
@@ -232,16 +273,49 @@ func Logf(lvl Level, format string, rest ...interface{}) {
 	logPrintf(lvl, format, rest...)
 }
 
+// Used when doing our own logging writing, in JSON/structured mode.
+var (
+	jsonWriter      io.Writer = os.Stderr
+	jsonWriterMutex sync.Mutex
+)
+
+func jsonWrite(msg string) {
+	jsonWriterMutex.Lock()
+	_, _ = jsonWriter.Write([]byte(msg)) // if we get errors while logging... can't quite ... log errors
+	jsonWriterMutex.Unlock()
+}
+
+func TimeToTS(t time.Time) int64 {
+	return t.UnixMicro()
+}
+
+func jsonTimestamp() string {
+	if Config.NoTimestamp {
+		return ""
+	}
+	return fmt.Sprintf("\"ts\":%d,", TimeToTS(time.Now()))
+}
+
 func logPrintf(lvl Level, format string, rest ...interface{}) {
 	if !Log(lvl) {
 		return
 	}
-	if Config.LogFileAndLine {
+	if Config.LogFileAndLine { //nolint:nestif
 		_, file, line, _ := runtime.Caller(2)
 		file = file[strings.LastIndex(file, "/")+1:]
-		log.Print(LevelToStrA[lvl][0:1], " ", file, ":", line, Config.LogPrefix, fmt.Sprintf(format, rest...))
+		if Config.JSON {
+			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"file\":%q,\"line\":%d,\"msg\":%q}\n",
+				jsonTimestamp(), LevelToJSON[lvl], file, line, fmt.Sprintf(format, rest...)))
+		} else {
+			log.Print(LevelToStrA[lvl][0:1], " ", file, ":", line, Config.LogPrefix, fmt.Sprintf(format, rest...))
+		}
 	} else {
-		log.Print(LevelToStrA[lvl][0:1], " ", Config.LogPrefix, fmt.Sprintf(format, rest...))
+		if Config.JSON {
+			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"msg\":%q}\n",
+				jsonTimestamp(), LevelToJSON[lvl], fmt.Sprintf(format, rest...)))
+		} else {
+			log.Print(LevelToStrA[lvl][0:1], " ", Config.LogPrefix, fmt.Sprintf(format, rest...))
+		}
 	}
 }
 
@@ -252,6 +326,7 @@ func Printf(format string, rest ...interface{}) {
 
 // SetOutput sets the output to a different writer (forwards to system logger).
 func SetOutput(w io.Writer) {
+	jsonWriter = w
 	log.SetOutput(w)
 }
 
@@ -345,4 +420,72 @@ func (l *loggerShm) Printf(format string, rest ...interface{}) {
 func Logger() LoggerI {
 	logger := loggerShm{}
 	return &logger
+}
+
+// Somewhat slog compatible/style logger
+
+type KeyVal struct {
+	Key   string
+	Value fmt.Stringer
+}
+
+type StringValue string
+
+func (s StringValue) String() string {
+	return string(s)
+}
+
+func Str(key, value string) KeyVal {
+	return KeyVal{Key: key, Value: StringValue(value)}
+}
+
+type ValueTypes interface{ any }
+
+type ValueType[T ValueTypes] struct {
+	Val T
+}
+
+func (v *ValueType[T]) String() string {
+	return fmt.Sprint(v.Val)
+}
+
+func Attr[T ValueTypes](key string, value T) KeyVal {
+	return KeyVal{
+		Key:   key,
+		Value: &ValueType[T]{Val: value},
+	}
+}
+
+func S(lvl Level, msg string, attrs ...KeyVal) {
+	if !Log(lvl) {
+		return
+	}
+	buf := strings.Builder{}
+	var format string
+	if Config.JSON {
+		format = ",%q:%q"
+	} else {
+		format = ", %s=%s"
+	}
+	for _, attr := range attrs {
+		buf.WriteString(fmt.Sprintf(format, attr.Key, attr.Value.String()))
+	}
+	if Config.LogFileAndLine { //nolint:nestif
+		_, file, line, _ := runtime.Caller(1)
+		file = file[strings.LastIndex(file, "/")+1:]
+		if Config.JSON {
+			// TODO share code with log.Printf yet without extra locks or allocations/buffers?
+			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"file\":%q,\"line\":%d,\"msg\":%q%s}\n",
+				jsonTimestamp(), LevelToJSON[lvl], file, line, msg, buf.String()))
+		} else {
+			log.Print(LevelToStrA[lvl][0:1], " ", file, ":", line, Config.LogPrefix, msg, buf.String())
+		}
+	} else {
+		if Config.JSON {
+			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"msg\":%q%s}\n",
+				jsonTimestamp(), LevelToJSON[lvl], msg, buf.String()))
+		} else {
+			log.Print(LevelToStrA[lvl][0:1], " ", Config.LogPrefix, msg, buf.String())
+		}
+	}
 }
