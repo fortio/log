@@ -27,6 +27,9 @@ log.Fatalf(...) // Fatal level - program will panic/exit
 // access log type including user-agent, forwarded ip/proto (behind load balancer case),
 // TLS crypto used and CN of peer certificate if any.
 log.LogRequest(r, "some info")
+
+// Structured logging with attributes
+log.S(log.Info, "msg", log.Attr("key1", value1)...)
 ```
 
 See the `Config` object for options like whether to include line number and file name of caller or not etc
@@ -43,4 +46,8 @@ Which can be converted to JSONEntry but is also a fixed, optimized format (ie ts
 
 The timestamp `ts` is in microseconds since epoch (golang UnixMicro())
 
-Optional additional `KeyValue` pairs can be added to the base structure using the new `log.S` or passed to `log.LogRequest`.
+Optional additional `KeyValue` pairs can be added to the base structure using the new `log.S` or passed to `log.LogRequest` using `log.Attr` and `log.Str`.
+
+JSON formatted logs can be converted back to text and colorized using [fortio.org/logc](https://github.com/fortio/logc#logc)
+
+![Example console color output](https://github.com/fortio/logc/raw/main/example.png)
