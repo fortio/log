@@ -235,16 +235,16 @@ func SetLogLevelQuiet(lvl Level) Level {
 func setLogLevel(lvl Level, logChange bool) Level {
 	prev := GetLogLevel()
 	if lvl < Debug {
-		log.Printf("SetLogLevel called with level %d lower than Debug!", lvl)
+		logUnconditionalf(Config.LogFileAndLine, Error, "SetLogLevel called with level %d lower than Debug!", lvl)
 		return -1
 	}
 	if lvl > Critical {
-		log.Printf("SetLogLevel called with level %d higher than Critical!", lvl)
+		logUnconditionalf(Config.LogFileAndLine, Error, "SetLogLevel called with level %d higher than Critical!", lvl)
 		return -1
 	}
 	if lvl != prev {
-		if logChange {
-			logPrintf(Info, "Log level is now %d %s (was %d %s)", lvl, lvl.String(), prev, prev.String())
+		if logChange && Log(Info) {
+			logUnconditionalf(Config.LogFileAndLine, Info, "Log level is now %d %s (was %d %s)", lvl, lvl.String(), prev, prev.String())
 		}
 		setLevel(lvl)
 	}
@@ -300,8 +300,12 @@ func logPrintf(lvl Level, format string, rest ...interface{}) {
 	if !Log(lvl) {
 		return
 	}
-	if Config.LogFileAndLine { //nolint:nestif
-		_, file, line, _ := runtime.Caller(2)
+	logUnconditionalf(Config.LogFileAndLine, lvl, format, rest...)
+}
+
+func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...interface{}) {
+	if logFileAndLine { //nolint:nestif
+		_, file, line, _ := runtime.Caller(3)
 		file = file[strings.LastIndex(file, "/")+1:]
 		if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"file\":%q,\"line\":%d,\"msg\":%q}\n",
@@ -321,7 +325,7 @@ func logPrintf(lvl Level, format string, rest ...interface{}) {
 
 // Printf forwards to the underlying go logger to print (with only timestamp prefixing).
 func Printf(format string, rest ...interface{}) {
-	log.Printf(format, rest...)
+	logUnconditionalf(false, Info, format, rest...)
 }
 
 // SetOutput sets the output to a different writer (forwards to system logger).
