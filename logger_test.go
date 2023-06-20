@@ -46,9 +46,16 @@ func TestLoggerFilenameLine(t *testing.T) {
 	if LogDebug() {
 		Debugf("test") // line 47
 	}
+	SetLogLevel(-1)      // line 49
+	SetLogLevel(Warning) // line 50
+	Infof("should not show (info level)")
+	Printf("Should show despite being Info - unconditional Printf without line/file")
 	w.Flush()
 	actual := b.String()
-	expected := "D logger_test.go:47-prefix-test\n"
+	expected := "D logger_test.go:47-prefix-test\n" +
+		"E logger_test.go:49-prefix-SetLogLevel called with level -1 lower than Debug!\n" +
+		"I logger_test.go:50-prefix-Log level is now 3 Warning (was 0 Debug)\n" +
+		"I -prefix-Should show despite being Info - unconditional Printf without line/file\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
 	}
@@ -67,11 +74,11 @@ func TestLoggerFilenameLineJSON(t *testing.T) {
 	SetOutput(w)
 	SetLogLevel(Debug)
 	if LogDebug() {
-		Debugf("a test") // line 70
+		Debugf("a test") // line 77
 	}
 	w.Flush()
 	actual := b.String()
-	expected := `{"level":"dbug","file":"` + thisFilename + `","line":70,"msg":"a test"}` + "\n"
+	expected := `{"level":"dbug","file":"` + thisFilename + `","line":77,"msg":"a test"}` + "\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
 	}
@@ -90,10 +97,12 @@ func Test_LogS_JSON_no_json_with_filename(t *testing.T) {
 	SetOutput(w)
 	// Start of the actual test
 	S(Verbose, "This won't show")
-	S(Warning, "This will show", Str("key1", "value 1"), Attr("key2", 42)) // line 93
+	S(Warning, "This will show", Str("key1", "value 1"), Attr("key2", 42)) // line 100
+	Printf("This will show too")                                           // no filename/line and shows despite level
 	_ = w.Flush()
 	actual := b.String()
-	expected := "W logger_test.go:93-bar-This will show, key1=value 1, key2=42\n"
+	expected := "W logger_test.go:100-bar-This will show, key1=value 1, key2=42\n" +
+		"I -bar-This will show too\n"
 	if actual != expected {
 		t.Errorf("got %q expected %q", actual, expected)
 	}
@@ -157,15 +166,15 @@ func TestLogger1(t *testing.T) {
 	i++
 	SetLogLevel(Debug) // should be fine and invisible change
 	SetLogLevel(Debug - 1)
-	expected += "SetLogLevel called with level -1 lower than Debug!\n"
+	expected += "E SetLogLevel called with level -1 lower than Debug!\n"
 	SetLogLevel(Fatal) // Hiding critical level is not allowed
-	expected += "SetLogLevel called with level 6 higher than Critical!\n"
+	expected += "E SetLogLevel called with level 6 higher than Critical!\n"
 	SetLogLevel(Critical) // should be fine
 	expected += "I Log level is now 5 Critical (was 0 Debug)\n"
 	Critf("testing crit %d", i) // should show
 	expected += "C testing crit 7\n"
 	Printf("Printf should always show n=%d", 8)
-	expected += "Printf should always show n=8\n"
+	expected += "I Printf should always show n=8\n"
 	r := FErrf("FErrf should always show but not exit, n=%d", 9)
 	expected += "F FErrf should always show but not exit, n=9\n"
 	if r != 1 {
@@ -210,7 +219,7 @@ func TestLoggerJSON(t *testing.T) {
 	if e.File != thisFilename {
 		t.Errorf("unexpected file %q", e.File)
 	}
-	if e.Line < 150 || e.Line > 200 {
+	if e.Line < 180 || e.Line > 240 {
 		t.Errorf("unexpected line %d", e.Line)
 	}
 	ts := e.Time()
@@ -254,7 +263,7 @@ func Test_LogS_JSON(t *testing.T) {
 	if e.File != thisFilename {
 		t.Errorf("unexpected file %q", e.File)
 	}
-	if e.Line < 200 || e.Line > 250 {
+	if e.Line < 230 || e.Line > 300 {
 		t.Errorf("unexpected line %d", e.Line)
 	}
 	ts := e.Time()
