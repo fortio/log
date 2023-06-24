@@ -399,7 +399,7 @@ func TestTimeToTs(t *testing.T) {
 		inv := e.Time()
 		// Round to microsecond because that's the resolution of the timestamp
 		// (note that on a mac for instance, there is no nanosecond resolution anyway)
-		if microsecondResolution(now).Equal(inv) {
+		if !microsecondResolution(now).Equal(inv) {
 			t.Fatalf("[at %d] unexpected time %v -> %v != %v (%v %v)", i, now, microsecondResolution(now), inv, usecTS, usecTSstr)
 		}
 	}
