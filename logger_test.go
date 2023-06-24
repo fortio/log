@@ -23,6 +23,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -44,17 +45,17 @@ func TestLoggerFilenameLine(t *testing.T) {
 	SetFlags(0)
 	SetLogLevel(Debug)
 	if LogDebug() {
-		Debugf("test") // line 47
+		Debugf("test") // line 48
 	}
-	SetLogLevel(-1)      // line 49
-	SetLogLevel(Warning) // line 50
+	SetLogLevel(-1)      // line 50
+	SetLogLevel(Warning) // line 51
 	Infof("should not show (info level)")
 	Printf("Should show despite being Info - unconditional Printf without line/file")
 	w.Flush()
 	actual := b.String()
-	expected := "D logger_test.go:47-prefix-test\n" +
-		"E logger_test.go:49-prefix-SetLogLevel called with level -1 lower than Debug!\n" +
-		"I logger_test.go:50-prefix-Log level is now 3 Warning (was 0 Debug)\n" +
+	expected := "D logger_test.go:48-prefix-test\n" +
+		"E logger_test.go:50-prefix-SetLogLevel called with level -1 lower than Debug!\n" +
+		"I logger_test.go:51-prefix-Log level is now 3 Warning (was 0 Debug)\n" +
 		"I -prefix-Should show despite being Info - unconditional Printf without line/file\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
@@ -74,11 +75,11 @@ func TestLoggerFilenameLineJSON(t *testing.T) {
 	SetOutput(w)
 	SetLogLevel(Debug)
 	if LogDebug() {
-		Debugf("a test") // line 77
+		Debugf("a test") // line 78
 	}
 	w.Flush()
 	actual := b.String()
-	expected := `{"level":"dbug","file":"` + thisFilename + `","line":77,"msg":"a test"}` + "\n"
+	expected := `{"level":"dbug","file":"` + thisFilename + `","line":78,"msg":"a test"}` + "\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
 	}
@@ -97,11 +98,11 @@ func Test_LogS_JSON_no_json_with_filename(t *testing.T) {
 	SetOutput(w)
 	// Start of the actual test
 	S(Verbose, "This won't show")
-	S(Warning, "This will show", Str("key1", "value 1"), Attr("key2", 42)) // line 100
+	S(Warning, "This will show", Str("key1", "value 1"), Attr("key2", 42)) // line 101
 	Printf("This will show too")                                           // no filename/line and shows despite level
 	_ = w.Flush()
 	actual := b.String()
-	expected := "W logger_test.go:100-bar-This will show, key1=value 1, key2=42\n" +
+	expected := "W logger_test.go:101-bar-This will show, key1=value 1, key2=42\n" +
 		"I -bar-This will show too\n"
 	if actual != expected {
 		t.Errorf("got %q expected %q", actual, expected)
@@ -383,16 +384,23 @@ func TestLoggerJSONNoTimestampNoFilename(t *testing.T) {
 
 // Test that TimeToTs and Time() are inverse of one another.
 func TestTimeToTs(t *testing.T) {
+	var prev float64
 	// tight loop to get different times, at highest resolution
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 100000; i++ {
 		now := time.Now()
-		int64Ts := TimeToTS(now)
-		e := JSONEntry{TS: int64Ts}
+		// now = now.Add(69 * time.Nanosecond)
+		usecTSstr := TimeToTStr(now)
+		usecTS, _ := strconv.ParseFloat(usecTSstr, 64)
+		if i != 0 && usecTS < prev {
+			t.Fatalf("clock went back in time at iter %d %v vs %v", i, usecTS, prev)
+		}
+		prev = usecTS
+		e := JSONEntry{TS: usecTS}
 		inv := e.Time()
 		// Round to microsecond because that's the resolution of the timestamp
 		// (note that on a mac for instance, there is no nanosecond resolution anyway)
-		if !microsecondResolution(now).Equal(inv) {
-			t.Fatalf("unexpected time %v != %v (%d)", now, inv, int64Ts)
+		if microsecondResolution(now).Equal(inv) {
+			t.Fatalf("[at %d] unexpected time %v -> %v != %v (%v %v)", i, now, microsecondResolution(now), inv, usecTS, usecTSstr)
 		}
 	}
 }
@@ -547,6 +555,25 @@ func TestStaticFlagDefault(t *testing.T) {
 	}
 	if GetLogLevel() != Info {
 		t.Errorf("expected log level to be Info, got %s", GetLogLevel().String())
+	}
+}
+
+func TestTimeToTS(t *testing.T) {
+	// test a few times and expected string
+	for _, tst := range []struct {
+		sec    int64
+		nano   int64
+		result string
+	}{
+		{1688763601, 42000, "1688763601.000042"},     // 42 usec after the seconds part, checking for leading zeroes
+		{1688763601, 199999999, "1688763601.199999"}, // nanosec are truncated away not rounded (see note in TimeToTS)
+		{1688763601, 200000999, "1688763601.200000"}, // boundary
+	} {
+		tm := time.Unix(tst.sec, tst.nano)
+		ts := TimeToTStr(tm)
+		if ts != tst.result {
+			t.Errorf("unexpected ts for %d, %d -> %q instead of %q (%v)", tst.sec, tst.nano, ts, tst.result, tm)
+		}
 	}
 }
 
