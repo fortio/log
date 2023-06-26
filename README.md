@@ -40,7 +40,7 @@ One can also revert server to not be JSON through config.
 
 In JSON mode the output looks like this
 ```json
-{"ts":1683504169239557,"level":"info","file":"logger.go","line":221,"msg":"Log level is now 1 Verbose (was 2 Info"}
+{"ts":1683504169.239557,"level":"info","file":"logger.go","line":221,"msg":"Log level is now 1 Verbose (was 2 Info"}
 ```
 Which can be converted to JSONEntry but is also a fixed, optimized format (ie ts is always first etc)
 
