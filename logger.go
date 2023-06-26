@@ -115,7 +115,7 @@ func SetDefaultsForClientTools() {
 // While that serialization of is custom in order to be cheap, it maps to the following
 // structure.
 type JSONEntry struct {
-	TS    float64 // in seconds since epoch (unix micros)
+	TS    float64 // In seconds since epoch (unix micros resolution), see TimeToTS().
 	Level string
 	File  string
 	Line  int
@@ -125,8 +125,9 @@ type JSONEntry struct {
 	// or https://go.dev/play/p/H0RPmuc3dzv (using github.com/mitchellh/mapstructure)
 }
 
-// LogEntry Ts to time.Time conversion.
+// Time() converts a LogEntry.TS to time.Time.
 // The returned time is set UTC to avoid TZ mismatch.
+// Inverse of TimeToTS().
 func (l *JSONEntry) Time() time.Time {
 	sec := int64(l.TS)
 	return time.Unix(
@@ -286,6 +287,8 @@ func jsonWrite(msg string) {
 	jsonWriterMutex.Unlock()
 }
 
+// Converts a time.Time to a float64 timestamp (seconds since epoch at microsecond resolution).
+// This is what is used in JSONEntry.TS.
 func TimeToTS(t time.Time) float64 {
 	// note that nanos like 1688763601.199999400 become 1688763601.1999996 in float64 (!)
 	// so we use UnixMicro to hide this problem which also means we don't give the nearest
@@ -295,7 +298,9 @@ func TimeToTS(t time.Time) float64 {
 	return tfloat
 }
 
-func TimeToTStr(t time.Time) string {
+// timeToTStr is copying the string-ification code from jsonTimestamp(),
+// it is used by tests to individually test what jsonTimestamp does.
+func timeToTStr(t time.Time) string {
 	return fmt.Sprintf("%.6f", TimeToTS(t))
 }
 
@@ -303,6 +308,7 @@ func jsonTimestamp() string {
 	if Config.NoTimestamp {
 		return ""
 	}
+	// Change timeToTStr if changing this.
 	return fmt.Sprintf("\"ts\":%.6f,", TimeToTS(time.Now()))
 }
 

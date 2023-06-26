@@ -389,7 +389,7 @@ func TestTimeToTs(t *testing.T) {
 	for i := 0; i < 100000; i++ {
 		now := time.Now()
 		// now = now.Add(69 * time.Nanosecond)
-		usecTSstr := TimeToTStr(now)
+		usecTSstr := timeToTStr(now)
 		usecTS, _ := strconv.ParseFloat(usecTSstr, 64)
 		if i != 0 && usecTS < prev {
 			t.Fatalf("clock went back in time at iter %d %v vs %v", i, usecTS, prev)
@@ -570,7 +570,7 @@ func TestTimeToTS(t *testing.T) {
 		{1688763601, 200000999, "1688763601.200000"}, // boundary
 	} {
 		tm := time.Unix(tst.sec, tst.nano)
-		ts := TimeToTStr(tm)
+		ts := timeToTStr(tm)
 		if ts != tst.result {
 			t.Errorf("unexpected ts for %d, %d -> %q instead of %q (%v)", tst.sec, tst.nano, ts, tst.result, tm)
 		}
