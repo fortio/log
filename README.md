@@ -53,7 +53,6 @@ If console output is detected (and ConsoleColor is true, which is the default) o
 When output is redirected, JSON output:
 ```json
 {"ts":1688674146.025678,"level":"dbug","file":"levels.go","line":15,"msg":"This is a debug message ending with backslash"}
-This is stdout normal output
 {"ts":1688674146.025708,"level":"trace","file":"levels.go","line":16,"msg":"This is a verbose message"}
 {"ts":1688674146.025714,"level":"info","msg":"This an always printed, file:line omitted message"}
 {"ts":1688674146.025717,"level":"info","file":"levels.go","line":18,"msg":"This is an info message with no attributes but with \"quotes\"..."}
@@ -62,6 +61,7 @@ This is stdout normal output
 {"ts":1688674146.025743,"level":"err","file":"levels.go","line":22,"msg":"This is an error message"}
 {"ts":1688674146.025745,"level":"crit","file":"levels.go","line":23,"msg":"This is a critical message"}
 {"ts":1688674146.025748,"level":"fatal","file":"levels.go","line":24,"msg":"This is a fatal message"}
+This is stdout normal output
 ```
 
 When on console:
