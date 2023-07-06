@@ -134,9 +134,9 @@ func TestColorMode(t *testing.T) {
 	Infof("info with file and line = %v", Config.LogFileAndLine)
 	_ = w.Flush()
 	actual := b.String()
-	expected := "\x1b[33mW logger_test.go:130> With file and line, attr=\"value with space\"\x1b[0m\n" +
+	expected := "\x1b[33mW logger_test.go:130> With file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
 		"\x1b[32mI logger_test.go:131> info with file and line = true\x1b[0m\n" +
-		"\x1b[33mW > Without file and line, attr=\"value with space\"\x1b[0m\n" +
+		"\x1b[33mW > Without file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
 		"\x1b[32mI > info with file and line = false\x1b[0m\n"
 	if actual != expected {
 		t.Errorf("got:\n%q\nexpected:\n%q", actual, expected)
