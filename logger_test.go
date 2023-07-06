@@ -107,6 +107,9 @@ func Test_LogS_JSON_no_json_with_filename(t *testing.T) {
 	if actual != expected {
 		t.Errorf("got %q expected %q", actual, expected)
 	}
+	if ConsoleLogging() {
+		t.Errorf("expected not to be console logging")
+	}
 }
 
 func TestSetLevel(t *testing.T) {
