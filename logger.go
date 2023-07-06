@@ -55,13 +55,19 @@ type LogConfig struct {
 	LogFileAndLine bool      // Logs filename and line number of callers to log.
 	FatalPanics    bool      // If true, log.Fatalf will panic (stack trace) instead of just exit 1
 	FatalExit      func(int) // Function to call upon log.Fatalf. e.g. os.Exit.
-	JSON           bool      // If true, log in structured JSON format instead of text.
+	JSON           bool      // If true, log in structured JSON format instead of text (but see ConsoleColor).
 	NoTimestamp    bool      // If true, don't log timestamp in json.
+	ConsoleColor   bool      // If true and we detect console output (not redirected), use text+color mode.
+	// Force color mode even if logger output is not console (useful for CI that recognize ansi colors).
+	// SetColorMode() must be called if this or ConsoleColor are changed.
+	ForceColor bool
 }
 
 // DefaultConfig() returns the default initial configuration for the logger, best suited
 // for servers. It will log caller file and line number, use a prefix to split line info
 // from the message and panic (+exit) on Fatal.
+// It's JSON structured by default, unless console is detected.
+// Use SetDefaultsForClientTools for CLIs.
 func DefaultConfig() *LogConfig {
 	return &LogConfig{
 		LogPrefix:      "> ",
@@ -69,6 +75,7 @@ func DefaultConfig() *LogConfig {
 		FatalPanics:    true,
 		FatalExit:      os.Exit,
 		JSON:           true,
+		ConsoleColor:   true,
 	}
 }
 
@@ -108,7 +115,9 @@ func SetDefaultsForClientTools() {
 	Config.LogPrefix = ""
 	Config.LogFileAndLine = false
 	Config.FatalPanics = false
+	Config.ConsoleColor = true
 	Config.JSON = false
+	SetColorMode()
 }
 
 // JSONEntry is the logical format of the JSON [Config.JSON] output mode.
@@ -146,6 +155,7 @@ func init() {
 		levelToStrM[strings.ToLower(name)] = Level(l)
 	}
 	log.SetFlags(log.Ltime)
+	SetColorMode()
 }
 
 func setLevel(lvl Level) {
@@ -323,14 +333,20 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 	if logFileAndLine { //nolint:nestif
 		_, file, line, _ := runtime.Caller(3)
 		file = file[strings.LastIndex(file, "/")+1:]
-		if Config.JSON {
+		if Color {
+			jsonWrite(fmt.Sprintf("%s%s%s %s:%d%s%s%s\n",
+				colorTimestamp(), LevelToColor[lvl], LevelToStrA[lvl][0:1], file, line, Config.LogPrefix, fmt.Sprintf(format, rest...), reset))
+		} else if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"file\":%q,\"line\":%d,\"msg\":%q}\n",
 				jsonTimestamp(), LevelToJSON[lvl], file, line, fmt.Sprintf(format, rest...)))
 		} else {
 			log.Print(LevelToStrA[lvl][0:1], " ", file, ":", line, Config.LogPrefix, fmt.Sprintf(format, rest...))
 		}
 	} else {
-		if Config.JSON {
+		if Color {
+			jsonWrite(fmt.Sprintf("%s%s%s %s%s%s\n",
+				colorTimestamp(), LevelToColor[lvl], LevelToStrA[lvl][0:1], Config.LogPrefix, fmt.Sprintf(format, rest...), reset))
+		} else if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"msg\":%q}\n",
 				jsonTimestamp(), LevelToJSON[lvl], fmt.Sprintf(format, rest...)))
 		} else {
@@ -348,6 +364,7 @@ func Printf(format string, rest ...interface{}) {
 func SetOutput(w io.Writer) {
 	jsonWriter = w
 	log.SetOutput(w)
+	SetColorMode() // reset color mode boolean
 }
 
 // SetFlags forwards flags to the system logger.
@@ -476,32 +493,41 @@ func Attr[T ValueTypes](key string, value T) KeyVal {
 	}
 }
 
+// S logs a message of the given level with additional attributes.
 func S(lvl Level, msg string, attrs ...KeyVal) {
 	if !Log(lvl) {
 		return
 	}
 	buf := strings.Builder{}
 	var format string
-	if Config.JSON {
+	if Color {
+		format = reset + ", " + blue + "%s" + reset + "=" + LevelToColor[lvl] + "%q"
+	} else if Config.JSON {
 		format = ",%q:%q"
 	} else {
-		format = ", %s=%s"
+		format = ", %s=%q"
 	}
 	for _, attr := range attrs {
 		buf.WriteString(fmt.Sprintf(format, attr.Key, attr.Value.String()))
 	}
+	// TODO share code with log.logUnconditionalf yet without extra locks or allocations/buffers?
 	if Config.LogFileAndLine { //nolint:nestif
 		_, file, line, _ := runtime.Caller(1)
 		file = file[strings.LastIndex(file, "/")+1:]
-		if Config.JSON {
-			// TODO share code with log.Printf yet without extra locks or allocations/buffers?
+		if Color {
+			jsonWrite(fmt.Sprintf("%s%s%s %s:%d%s%s%s%s\n",
+				colorTimestamp(), LevelToColor[lvl], LevelToStrA[lvl][0:1], file, line, Config.LogPrefix, msg, buf.String(), reset))
+		} else if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"file\":%q,\"line\":%d,\"msg\":%q%s}\n",
 				jsonTimestamp(), LevelToJSON[lvl], file, line, msg, buf.String()))
 		} else {
 			log.Print(LevelToStrA[lvl][0:1], " ", file, ":", line, Config.LogPrefix, msg, buf.String())
 		}
 	} else {
-		if Config.JSON {
+		if Color {
+			jsonWrite(fmt.Sprintf("%s%s%s %s%s%s%s\n",
+				colorTimestamp(), LevelToColor[lvl], LevelToStrA[lvl][0:1], Config.LogPrefix, msg, buf.String(), reset))
+		} else if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"msg\":%q%s}\n",
 				jsonTimestamp(), LevelToJSON[lvl], msg, buf.String()))
 		} else {

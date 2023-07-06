@@ -46,7 +46,12 @@ linters-settings:
     enable-all: true
     disable-all: false
   depguard:
-    # new depguard default is to complain for anything not std package which works for this specific base package
+    rules:
+      main:
+        # List of allowed packages.
+        allow:
+          - $gostd
+          - fortio.org/log
   lll:
     # max line length, lines longer will be reported. Default is 120.
     # '\t' is counted as 1 character by default, and can be changed with the tab-width option
