@@ -57,7 +57,7 @@ var (
 )
 
 // SetColorMode computes whether we currently should be using color text mode or not.
-// Need to be reset if config changes (but is already automatically re evaluated when calling SetOutput())
+// Need to be reset if config changes (but is already automatically re evaluated when calling SetOutput()).
 func SetColorMode() {
 	Color = ColorMode()
 }
