@@ -67,6 +67,7 @@ func SetColorMode() {
 
 // ColorMode returns true if we should be using color text mode, which is either because it's
 // forced or because we are in a console and the config allows it.
+// Should not be called often, instead read/update the Color variable when needed.
 func ColorMode() bool {
 	return Config.ForceColor || (Config.ConsoleColor && ConsoleLogging())
 }
