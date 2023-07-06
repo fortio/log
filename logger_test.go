@@ -107,9 +107,48 @@ func Test_LogS_JSON_no_json_with_filename(t *testing.T) {
 	if actual != expected {
 		t.Errorf("got %q expected %q", actual, expected)
 	}
+}
+
+func TestColorMode(t *testing.T) {
 	if ConsoleLogging() {
 		t.Errorf("expected not to be console logging")
 	}
+	if Color {
+		t.Errorf("expected to not be in color mode initially")
+	}
+	// Setup
+	Config = DefaultConfig()
+	Config.ForceColor = true
+	Config.NoTimestamp = true
+	SetLogLevelQuiet(Info)
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	SetOutput(w) // will call SetColorMode()
+	if !Color {
+		t.Errorf("expected to be in color mode after ForceColor=true and SetColorMode()")
+	}
+	S(Warning, "With file and line", Str("attr", "value with space")) // line 130
+	Infof("info with file and line = %v", Config.LogFileAndLine)      // line 131
+	Config.LogFileAndLine = false
+	S(Warning, "Without file and line", Str("attr", "value with space"))
+	Infof("info with file and line = %v", Config.LogFileAndLine)
+	_ = w.Flush()
+	actual := b.String()
+	expected := "\x1b[33mW logger_test.go:130> With file and line, attr=\"value with space\"\x1b[0m\n" +
+		"\x1b[32mI logger_test.go:131> info with file and line = true\x1b[0m\n" +
+		"\x1b[33mW > Without file and line, attr=\"value with space\"\x1b[0m\n" +
+		"\x1b[32mI > info with file and line = false\x1b[0m\n"
+	if actual != expected {
+		t.Errorf("got:\n%q\nexpected:\n%q", actual, expected)
+	}
+	// See color timestamp
+	Config.NoTimestamp = false
+	cs := colorTimestamp()
+	if cs == "" {
+		t.Errorf("got empty color timestamp")
+	}
+	// Reset for other/further tests
+	Config.ForceColor = false
 }
 
 func TestSetLevel(t *testing.T) {
@@ -223,7 +262,7 @@ func TestLoggerJSON(t *testing.T) {
 	if e.File != thisFilename {
 		t.Errorf("unexpected file %q", e.File)
 	}
-	if e.Line < 180 || e.Line > 240 {
+	if e.Line < 230 || e.Line > 280 {
 		t.Errorf("unexpected line %d", e.Line)
 	}
 	ts := e.Time()
@@ -267,7 +306,7 @@ func Test_LogS_JSON(t *testing.T) {
 	if e.File != thisFilename {
 		t.Errorf("unexpected file %q", e.File)
 	}
-	if e.Line < 230 || e.Line > 300 {
+	if e.Line < 270 || e.Line > 340 {
 		t.Errorf("unexpected line %d", e.Line)
 	}
 	ts := e.Time()

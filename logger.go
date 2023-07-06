@@ -529,7 +529,10 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 		}
 	} else {
 		if Color {
-
+			color := LevelToColor[lvl]
+			ts := colorTimestamp()
+			jsonWrite(fmt.Sprintf("%s%s%s %s%s%s%s\n",
+				ts, color, LevelToStrA[lvl][0:1], Config.LogPrefix, msg, buf.String(), reset))
 		} else if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"msg\":%q%s}\n",
 				jsonTimestamp(), LevelToJSON[lvl], msg, buf.String()))
