@@ -102,7 +102,7 @@ func Test_LogS_JSON_no_json_with_filename(t *testing.T) {
 	Printf("This will show too")                                           // no filename/line and shows despite level
 	_ = w.Flush()
 	actual := b.String()
-	expected := "W logger_test.go:101-bar-This will show, key1=value 1, key2=42\n" +
+	expected := "W logger_test.go:101-bar-This will show, key1=\"value 1\", key2=\"42\"\n" +
 		"I -bar-This will show too\n"
 	if actual != expected {
 		t.Errorf("got %q expected %q", actual, expected)
@@ -342,7 +342,7 @@ func Test_LogS_JSON_no_json_no_file(t *testing.T) {
 	S(Warning, "This will show", Str("key1", "value 1"), Attr("key2", 42))
 	_ = w.Flush()
 	actual := b.String()
-	expected := "W -foo-This will show, key1=value 1, key2=42\n"
+	expected := "W -foo-This will show, key1=\"value 1\", key2=\"42\"\n"
 	if actual != expected {
 		t.Errorf("got %q expected %q", actual, expected)
 	}

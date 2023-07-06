@@ -504,10 +504,10 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 	}
 	buf := strings.Builder{}
 	var format string
-	if Config.JSON {
-		format = ", %s:%q"
+	if Config.JSON && !Color {
+		format = ",%q:%q"
 	} else {
-		format = ", %s=%s"
+		format = ", %s=%q"
 	}
 	for _, attr := range attrs {
 		buf.WriteString(fmt.Sprintf(format, attr.Key, attr.Value.String()))
