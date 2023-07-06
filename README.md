@@ -66,6 +66,7 @@ This is stdout normal output
 
 When on console:
 
+<!-- run make screenshot and capture screen area to update this -->
 ![Example console color output](color.png)
 
 JSON formatted logs can also be converted back to text later/after capture and similarly colorized using [fortio.org/logc](https://github.com/fortio/logc#logc)

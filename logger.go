@@ -500,7 +500,9 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 	}
 	buf := strings.Builder{}
 	var format string
-	if Config.JSON && !Color {
+	if Color {
+		format = reset + ", " + blue + "%s" + reset + "=" + LevelToColor[lvl] + "%q"
+	} else if Config.JSON {
 		format = ",%q:%q"
 	} else {
 		format = ", %s=%q"
