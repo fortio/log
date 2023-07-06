@@ -19,15 +19,6 @@ import (
 	"time"
 )
 
-func ConsoleLogging() bool {
-	f, ok := jsonWriter.(*os.File)
-	if !ok {
-		return false
-	}
-	s, _ := f.Stat()
-	return (s.Mode() & os.ModeCharDevice) == os.ModeCharDevice
-}
-
 const (
 	// ANSI color codes.
 	reset     = "\033[0m"
@@ -44,6 +35,7 @@ const (
 )
 
 var (
+	// Mapping of log levels to color.
 	LevelToColor = []string{
 		gray,
 		cyan,
@@ -53,8 +45,19 @@ var (
 		purple,
 		brightRed,
 	}
+	// Cached flag for whether to use color output or not.
 	Color = false
 )
+
+// ConsoleLogging is a utility to check if the current logger output is a console (terminal).
+func ConsoleLogging() bool {
+	f, ok := jsonWriter.(*os.File)
+	if !ok {
+		return false
+	}
+	s, _ := f.Stat()
+	return (s.Mode() & os.ModeCharDevice) == os.ModeCharDevice
+}
 
 // SetColorMode computes whether we currently should be using color text mode or not.
 // Need to be reset if config changes (but is already automatically re evaluated when calling SetOutput()).
@@ -62,6 +65,8 @@ func SetColorMode() {
 	Color = ColorMode()
 }
 
+// ColorMode returns true if we should be using color text mode, which is either because it's
+// forced or because we are in a console and the config allows it.
 func ColorMode() bool {
 	return Config.ForceColor || (Config.ConsoleColor && ConsoleLogging())
 }
