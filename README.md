@@ -48,8 +48,8 @@ The timestamp `ts` is in microseconds since epoch (golang UnixMicro())
 
 Optional additional `KeyValue` pairs can be added to the base structure using the new `log.S` or passed to `log.LogRequest` using `log.Attr` and `log.Str`.
 
-If console output is detected (and ConsoleColor is true, which is the default) or if ForceColor is set, colorized output similar to `logc` will be done instead of JSON (see [levelsDemo/levels.go](levelsDemo/levels.go) output).
+If console output is detected (and ConsoleColor is true, which is the default) or if ForceColor is set, colorized output similar to `logc` will be done instead of JSON. [levelsDemo/levels.go](levelsDemo/levels.go) produces the following output:
 
-JSON formatted logs can also be converted back to text and colorized using [fortio.org/logc](https://github.com/fortio/logc#logc)
+![Example console color output](color.png)
 
-![Example console color output](https://github.com/fortio/logc/raw/main/example.png)
+JSON formatted logs can also be converted back to text later/after capture and similarly colorized using [fortio.org/logc](https://github.com/fortio/logc#logc)
