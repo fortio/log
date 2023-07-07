@@ -105,6 +105,7 @@ var (
 		"\"crit\"",
 		"\"fatal\"",
 	}
+	JSONStringLevelToLevel map[string]Level
 )
 
 // SetDefaultsForClientTools changes the default value of LogPrefix and LogFileAndLine
@@ -153,6 +154,9 @@ func init() {
 		// Allow both -loglevel Verbose and -loglevel verbose ...
 		levelToStrM[name] = Level(l)
 		levelToStrM[strings.ToLower(name)] = Level(l)
+	}
+	for l, name := range LevelToJSON {
+		JSONStringLevelToLevel[name] = Level(l)
 	}
 	log.SetFlags(log.Ltime)
 	SetColorMode()
