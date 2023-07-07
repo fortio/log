@@ -19,31 +19,48 @@ import (
 	"time"
 )
 
-const (
-	// ANSI color codes.
-	reset     = "\033[0m"
-	red       = "\033[31m"
-	green     = "\033[32m"
-	yellow    = "\033[33m"
-	blue      = "\033[34m"
-	purple    = "\033[35m"
-	cyan      = "\033[36m"
-	gray      = "\033[37m"
-	white     = "\033[97m"
-	brightRed = "\033[91m"
-	darkGray  = "\033[90m"
-)
+// to avoid making a new package/namespace for colors, we use a struct.
+type color struct {
+	Reset     string
+	Red       string
+	Green     string
+	Yellow    string
+	Blue      string
+	Purple    string
+	Cyan      string
+	Gray      string
+	White     string
+	BrightRed string
+	DarkGray  string
+}
 
 var (
+	// these should really be constants but go doesn't have constant structs, arrays etc...
+
+	// ANSI color codes.
+	Colors = color{
+		Reset:     "\033[0m",
+		Red:       "\033[31m",
+		Green:     "\033[32m",
+		Yellow:    "\033[33m",
+		Blue:      "\033[34m",
+		Purple:    "\033[35m",
+		Cyan:      "\033[36m",
+		Gray:      "\033[37m",
+		White:     "\033[97m",
+		BrightRed: "\033[91m",
+		DarkGray:  "\033[90m",
+	}
+
 	// Mapping of log levels to color.
 	LevelToColor = []string{
-		gray,
-		cyan,
-		green,
-		yellow,
-		red,
-		purple,
-		brightRed,
+		Colors.Gray,
+		Colors.Cyan,
+		Colors.Green,
+		Colors.Yellow,
+		Colors.Red,
+		Colors.Purple,
+		Colors.BrightRed,
 	}
 	// Cached flag for whether to use color output or not.
 	Color = false
@@ -76,5 +93,5 @@ func colorTimestamp() string {
 	if Config.NoTimestamp {
 		return ""
 	}
-	return time.Now().Format("\033[90m15:04:05.000 ")
+	return time.Now().Format(Colors.DarkGray + "15:04:05.000 ")
 }
