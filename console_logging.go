@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-// to avoid making a new package/namespace for colors, we use a struct
+// to avoid making a new package/namespace for colors, we use a struct.
 type color struct {
 	Reset     string
 	Red       string
