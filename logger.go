@@ -150,6 +150,7 @@ func (l *JSONEntry) Time() time.Time {
 func init() {
 	setLevel(Info) // starting value
 	levelToStrM = make(map[string]Level, 2*len(LevelToStrA))
+	JSONStringLevelToLevel = make(map[string]Level, len(LevelToJSON))
 	for l, name := range LevelToStrA {
 		// Allow both -loglevel Verbose and -loglevel verbose ...
 		levelToStrM[name] = Level(l)
