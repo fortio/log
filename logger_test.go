@@ -619,6 +619,17 @@ func TestTimeToTS(t *testing.T) {
 	}
 }
 
+func TestJSONLevelReverse(t *testing.T) {
+	str := LevelToJSON[Warning]
+	if str != `"warn"` {
+		t.Errorf("unexpected JSON level string %q (should have quotes)", str)
+	}
+	lvl := JSONStringLevelToLevel["warn"]
+	if lvl != Warning {
+		t.Errorf("unexpected level %d", lvl)
+	}
+}
+
 func BenchmarkLogDirect1(b *testing.B) {
 	setLevel(Error)
 	for n := 0; n < b.N; n++ {

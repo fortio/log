@@ -157,7 +157,8 @@ func init() {
 		levelToStrM[strings.ToLower(name)] = Level(l)
 	}
 	for l, name := range LevelToJSON {
-		JSONStringLevelToLevel[name] = Level(l)
+		// strip the quotes around
+		JSONStringLevelToLevel[name[1:len(name)-1]] = Level(l)
 	}
 	log.SetFlags(log.Ltime)
 	SetColorMode()
