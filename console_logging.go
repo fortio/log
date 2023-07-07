@@ -97,5 +97,5 @@ func colorTimestamp() string {
 	if Config.NoTimestamp {
 		return ""
 	}
-	return time.Now().Format("\033[90m15:04:05.000 ")
+	return time.Now().Format(Colors.DarkGray + "15:04:05.000 ")
 }
