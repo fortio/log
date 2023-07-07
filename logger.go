@@ -335,7 +335,7 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 		file = file[strings.LastIndex(file, "/")+1:]
 		if Color {
 			jsonWrite(fmt.Sprintf("%s%s%s %s:%d%s%s%s\n",
-				colorTimestamp(), LevelToColor[lvl], LevelToStrA[lvl][0:1], file, line, Config.LogPrefix, fmt.Sprintf(format, rest...), reset))
+				colorTimestamp(), LevelToColor[lvl], LevelToStrA[lvl][0:1], file, line, Config.LogPrefix, fmt.Sprintf(format, rest...), Colors.Reset))
 		} else if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"file\":%q,\"line\":%d,\"msg\":%q}\n",
 				jsonTimestamp(), LevelToJSON[lvl], file, line, fmt.Sprintf(format, rest...)))
@@ -345,7 +345,7 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 	} else {
 		if Color {
 			jsonWrite(fmt.Sprintf("%s%s%s %s%s%s\n",
-				colorTimestamp(), LevelToColor[lvl], LevelToStrA[lvl][0:1], Config.LogPrefix, fmt.Sprintf(format, rest...), reset))
+				colorTimestamp(), LevelToColor[lvl], LevelToStrA[lvl][0:1], Config.LogPrefix, fmt.Sprintf(format, rest...), Colors.Reset))
 		} else if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"msg\":%q}\n",
 				jsonTimestamp(), LevelToJSON[lvl], fmt.Sprintf(format, rest...)))
@@ -364,7 +364,7 @@ func Printf(format string, rest ...interface{}) {
 func SetOutput(w io.Writer) {
 	jsonWriter = w
 	log.SetOutput(w)
-	SetColorMode() // reset color mode boolean
+	SetColorMode() // Colors.Reset color mode boolean
 }
 
 // SetFlags forwards flags to the system logger.
@@ -501,7 +501,7 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 	buf := strings.Builder{}
 	var format string
 	if Color {
-		format = reset + ", " + blue + "%s" + reset + "=" + LevelToColor[lvl] + "%q"
+		format = Colors.Reset + ", " + Colors.Blue + "%s" + Colors.Reset + "=" + LevelToColor[lvl] + "%q"
 	} else if Config.JSON {
 		format = ",%q:%q"
 	} else {
@@ -516,7 +516,7 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 		file = file[strings.LastIndex(file, "/")+1:]
 		if Color {
 			jsonWrite(fmt.Sprintf("%s%s%s %s:%d%s%s%s%s\n",
-				colorTimestamp(), LevelToColor[lvl], LevelToStrA[lvl][0:1], file, line, Config.LogPrefix, msg, buf.String(), reset))
+				colorTimestamp(), LevelToColor[lvl], LevelToStrA[lvl][0:1], file, line, Config.LogPrefix, msg, buf.String(), Colors.Reset))
 		} else if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"file\":%q,\"line\":%d,\"msg\":%q%s}\n",
 				jsonTimestamp(), LevelToJSON[lvl], file, line, msg, buf.String()))
@@ -526,7 +526,7 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 	} else {
 		if Color {
 			jsonWrite(fmt.Sprintf("%s%s%s %s%s%s%s\n",
-				colorTimestamp(), LevelToColor[lvl], LevelToStrA[lvl][0:1], Config.LogPrefix, msg, buf.String(), reset))
+				colorTimestamp(), LevelToColor[lvl], LevelToStrA[lvl][0:1], Config.LogPrefix, msg, buf.String(), Colors.Reset))
 		} else if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"msg\":%q%s}\n",
 				jsonTimestamp(), LevelToJSON[lvl], msg, buf.String()))
