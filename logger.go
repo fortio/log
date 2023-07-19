@@ -105,6 +105,8 @@ var (
 		"\"crit\"",
 		"\"fatal\"",
 	}
+	// Reverse mapping of level string used in JSON to Level. Used by https://github.com/fortio/logc
+	// to interpret and colorize pre existing JSON logs.
 	JSONStringLevelToLevel map[string]Level
 )
 
