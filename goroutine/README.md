@@ -1,3 +1,9 @@
+If you just want a thread ID / goroutine ID use the original this was imported from:
+
+https://github.com/kortschak/goroutine/
+
+Credits goes to Dan Kortschak and Laevus Dexter
+
 # goroutine identification
 
 Package goroutine provides a single function that will return the runtime's
