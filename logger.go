@@ -61,6 +61,8 @@ type LogConfig struct {
 	// Force color mode even if logger output is not console (useful for CI that recognize ansi colors).
 	// SetColorMode() must be called if this or ConsoleColor are changed.
 	ForceColor bool
+	// If true, log the goroutine ID (gid) in json.
+	GoroutineID bool
 }
 
 // DefaultConfig() returns the default initial configuration for the logger, best suited
@@ -76,6 +78,7 @@ func DefaultConfig() *LogConfig {
 		FatalExit:      os.Exit,
 		JSON:           true,
 		ConsoleColor:   true,
+		GoroutineID:    true,
 	}
 }
 
@@ -120,6 +123,7 @@ func SetDefaultsForClientTools() {
 	Config.FatalPanics = false
 	Config.ConsoleColor = true
 	Config.JSON = false
+	Config.GoroutineID = false
 	SetColorMode()
 }
 
@@ -506,6 +510,10 @@ func Attr[T ValueTypes](key string, value T) KeyVal {
 func S(lvl Level, msg string, attrs ...KeyVal) {
 	if !Log(lvl) {
 		return
+	}
+	extra := ""
+	if Config.GoroutineID {
+
 	}
 	buf := strings.Builder{}
 	var format string
