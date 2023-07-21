@@ -15,8 +15,11 @@
 package log
 
 import (
+	"fmt"
 	"os"
 	"time"
+
+	"fortio.org/log/goroutine"
 )
 
 // to avoid making a new package/namespace for colors, we use a struct.
@@ -94,4 +97,12 @@ func colorTimestamp() string {
 		return ""
 	}
 	return time.Now().Format(Colors.DarkGray + "15:04:05.000 ")
+}
+
+// Color version of jsonGID().
+func colorGID() string {
+	if !Config.GoroutineID {
+		return ""
+	}
+	return Colors.Gray + fmt.Sprintf("[%d] ", goroutine.ID())
 }

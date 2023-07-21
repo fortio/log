@@ -44,7 +44,9 @@ In JSON mode the output looks like this
 ```
 Which can be converted to JSONEntry but is also a fixed, optimized format (ie ts is always first etc)
 
-The timestamp `ts` is in microseconds since epoch (golang UnixMicro())
+The timestamp `ts` is in seconds.microseconds since epoch (golang UnixMicro() split into seconds part before decimal and microseconds after)
+
+Since 1.8 the Goroutine ID is present in json or colorized log output (for multi threaded server types).
 
 Optional additional `KeyValue` pairs can be added to the base structure using the new `log.S` or passed to `log.LogRequest` using `log.Attr` and `log.Str`.
 
@@ -52,15 +54,15 @@ If console output is detected (and ConsoleColor is true, which is the default) o
 
 When output is redirected, JSON output:
 ```json
-{"ts":1688674146.025678,"level":"dbug","file":"levels.go","line":15,"msg":"This is a debug message ending with backslash"}
-{"ts":1688674146.025708,"level":"trace","file":"levels.go","line":16,"msg":"This is a verbose message"}
-{"ts":1688674146.025714,"level":"info","msg":"This an always printed, file:line omitted message"}
-{"ts":1688674146.025717,"level":"info","file":"levels.go","line":18,"msg":"This is an info message with no attributes but with \"quotes\"..."}
-{"ts":1688674146.025735,"level":"info","file":"levels.go","line":19,"msg":"This is multi line\n\tstructured info message with 3 attributes","attr1":"value1","attr2":"42","attr3":"\"quoted\nvalue\""}
-{"ts":1688674146.025741,"level":"warn","file":"levels.go","line":21,"msg":"This is a warning message"}
-{"ts":1688674146.025743,"level":"err","file":"levels.go","line":22,"msg":"This is an error message"}
-{"ts":1688674146.025745,"level":"crit","file":"levels.go","line":23,"msg":"This is a critical message"}
-{"ts":1688674146.025748,"level":"fatal","file":"levels.go","line":24,"msg":"This is a fatal message"}
+{"ts":1689982778.034675,"level":"dbug","grid":1,"file":"levels.go","line":16,"msg":"This is a debug message ending with backslash \\"}
+{"ts":1689982778.034703,"level":"trace","grid":1,"file":"levels.go","line":17,"msg":"This is a verbose message"}
+{"ts":1689982778.034707,"level":"info","grid":1,"msg":"This an always printed, file:line omitted message"}
+{"ts":1689982778.034710,"level":"info","grid":1,"file":"levels.go","line":19,"msg":"This is an info message with no attributes but with \"quotes\"..."}
+{"ts":1689982778.034716,"level":"info","grid":1,"file":"levels.go","line":20,"msg":"This is multi line\n\tstructured info message with 3 attributes","attr1":"value1","attr2":"42","attr3":"\"quoted\nvalue\""}
+{"ts":1689982778.034721,"level":"warn","grid":1,"file":"levels.go","line":22,"msg":"This is a warning message"}
+{"ts":1689982778.034723,"level":"err","grid":1,"file":"levels.go","line":23,"msg":"This is an error message"}
+{"ts":1689982778.034726,"level":"crit","grid":1,"file":"levels.go","line":24,"msg":"This is a critical message"}
+{"ts":1689982778.034728,"level":"fatal","grid":1,"file":"levels.go","line":25,"msg":"This is a fatal message"}
 This is stdout normal output
 ```
 

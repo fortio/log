@@ -46,3 +46,10 @@ func goid() int64 {
 	}
 	return id
 }
+
+func BenchmarkGID(b *testing.B) {
+	var gotid int64
+	for n := 0; n < b.N; n++ {
+		gotid += ID()
+	}
+}
