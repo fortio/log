@@ -21,7 +21,7 @@ func TestLogRequest(t *testing.T) {
 	SetOutput(w)
 	h := http.Header{"foo": []string{"bar1", "bar2"}}
 	cert := &x509.Certificate{Subject: pkix.Name{CommonName: "x\nyz"}} // make sure special chars are escaped
-	r := &http.Request{TLS: &tls.ConnectionState{PeerCertificates: []*x509.Certificate{cert}}, Header: h}
+	r := &http.Request{TLS: &tls.ConnectionState{PeerCertificates: []*x509.Certificate{cert}}, Header: h, Host: "foo-host:123"}
 	LogRequest(r, "test1")
 	r.TLS = nil
 	r.Header = nil
@@ -29,8 +29,8 @@ func TestLogRequest(t *testing.T) {
 	w.Flush()
 	actual := b.String()
 	//nolint: lll
-	expected := `{"level":"info","msg":"test1","method":"","url":"<nil>","proto":"","remote_addr":"","header.x-forwarded-proto":"","header.x-forwarded-for":"","user-agent":"","tls":"true","tls.peer_cn":"x\nyz","header.host":"","header.foo":"bar1,bar2"}
-{"level":"info","msg":"test2","method":"","url":"<nil>","proto":"","remote_addr":"","header.x-forwarded-proto":"","header.x-forwarded-for":"","user-agent":"","extra1":"v1","extra2":"v2","header.host":""}
+	expected := `{"level":"info","msg":"test1","method":"","url":"<nil>","proto":"","remote_addr":"","host":"foo-host:123","header.x-forwarded-proto":"","header.x-forwarded-for":"","user-agent":"","tls":"true","tls.peer_cn":"x\nyz","header.foo":"bar1,bar2"}
+{"level":"info","msg":"test2","method":"","url":"<nil>","proto":"","remote_addr":"","host":"foo-host:123","header.x-forwarded-proto":"","header.x-forwarded-for":"","user-agent":"","extra1":"v1","extra2":"v2"}
 `
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
