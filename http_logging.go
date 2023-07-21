@@ -57,7 +57,8 @@ func LogRequest(r *http.Request, msg string, extraAttributes ...KeyVal) {
 	}
 	attr := []KeyVal{
 		Str("method", r.Method), Attr("url", r.URL), Str("proto", r.Proto),
-		Str("remote_addr", r.RemoteAddr), Str("header.x-forwarded-proto", r.Header.Get("X-Forwarded-Proto")),
+		Str("remote_addr", r.RemoteAddr), Str("host", r.Host),
+		Str("header.x-forwarded-proto", r.Header.Get("X-Forwarded-Proto")),
 		Str("header.x-forwarded-for", r.Header.Get("X-Forwarded-For")),
 		Str("user-agent", r.Header.Get("User-Agent")),
 	}
@@ -65,7 +66,6 @@ func LogRequest(r *http.Request, msg string, extraAttributes ...KeyVal) {
 	attr = append(attr, extraAttributes...)
 	if LogVerbose() {
 		// Host is removed from headers map and put separately
-		attr = append(attr, Str("header.host", r.Host))
 		for name, headers := range r.Header {
 			attr = append(attr, Str("header."+name, strings.Join(headers, ",")))
 		}
