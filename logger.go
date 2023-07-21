@@ -511,10 +511,9 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 	if !Log(lvl) {
 		return
 	}
-	extra := ""
-	if Config.GoroutineID {
-
-	}
+	// extra := ""
+	// if Config.GoroutineID {
+	// }
 	buf := strings.Builder{}
 	var format string
 	if Color {
