@@ -369,7 +369,8 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 	} else {
 		if Color {
 			jsonWrite(fmt.Sprintf("%s%s%s%s %s%s%s\n",
-				colorTimestamp(), colorGID(), LevelToColor[lvl], LevelToStrA[lvl][0:1], Config.LogPrefix, fmt.Sprintf(format, rest...), Colors.Reset))
+				colorTimestamp(), colorGID(), LevelToColor[lvl], LevelToStrA[lvl][0:1], Config.LogPrefix,
+				fmt.Sprintf(format, rest...), Colors.Reset))
 		} else if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,%s\"msg\":%q}\n",
 				jsonTimestamp(), LevelToJSON[lvl], jsonGID(), fmt.Sprintf(format, rest...)))
