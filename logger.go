@@ -134,7 +134,7 @@ func SetDefaultsForClientTools() {
 // structure.
 type JSONEntry struct {
 	TS    float64 // In seconds since epoch (unix micros resolution), see TimeToTS().
-	GrID  int64   // Goroutine ID (if enabled)
+	R     int64   // Goroutine ID (if enabled)
 	Level string
 	File  string
 	Line  int
@@ -342,7 +342,7 @@ func jsonGID() string {
 	if !Config.GoroutineID {
 		return ""
 	}
-	return fmt.Sprintf("\"grid\":%d,", goroutine.ID())
+	return fmt.Sprintf("\"r\":%d,", goroutine.ID())
 }
 
 func logPrintf(lvl Level, format string, rest ...interface{}) {

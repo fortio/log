@@ -86,7 +86,7 @@ func TestLoggerFilenameLineJSON(t *testing.T) {
 	if grID <= 0 {
 		t.Errorf("unexpected goroutine id %d", grID)
 	}
-	expected := `{"level":"dbug","grid":` + strconv.FormatInt(grID, 10) +
+	expected := `{"level":"dbug","r":` + strconv.FormatInt(grID, 10) +
 		`,"file":"` + thisFilename + `","line":81,"msg":"a test"}` + "\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
