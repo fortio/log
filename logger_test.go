@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -28,6 +29,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"fortio.org/log/goroutine"
 )
 
 const thisFilename = "logger_test.go"
@@ -45,17 +48,17 @@ func TestLoggerFilenameLine(t *testing.T) {
 	SetFlags(0)
 	SetLogLevel(Debug)
 	if LogDebug() {
-		Debugf("test") // line 48
+		Debugf("test") // line 51
 	}
-	SetLogLevel(-1)      // line 50
-	SetLogLevel(Warning) // line 51
+	SetLogLevel(-1)      // line 53
+	SetLogLevel(Warning) // line 54
 	Infof("should not show (info level)")
 	Printf("Should show despite being Info - unconditional Printf without line/file")
 	w.Flush()
 	actual := b.String()
-	expected := "D logger_test.go:48-prefix-test\n" +
-		"E logger_test.go:50-prefix-SetLogLevel called with level -1 lower than Debug!\n" +
-		"I logger_test.go:51-prefix-Log level is now 3 Warning (was 0 Debug)\n" +
+	expected := "D logger_test.go:51-prefix-test\n" +
+		"E logger_test.go:53-prefix-SetLogLevel called with level -1 lower than Debug!\n" +
+		"I logger_test.go:54-prefix-Log level is now 3 Warning (was 0 Debug)\n" +
 		"I -prefix-Should show despite being Info - unconditional Printf without line/file\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
@@ -75,11 +78,16 @@ func TestLoggerFilenameLineJSON(t *testing.T) {
 	SetOutput(w)
 	SetLogLevel(Debug)
 	if LogDebug() {
-		Debugf("a test") // line 78
+		Debugf("a test") // line 81
 	}
 	w.Flush()
 	actual := b.String()
-	expected := `{"level":"dbug","file":"` + thisFilename + `","line":78,"msg":"a test"}` + "\n"
+	grID := goroutine.ID()
+	if grID <= 0 {
+		t.Errorf("unexpected goroutine id %d", grID)
+	}
+	expected := `{"level":"dbug","grid":` + strconv.FormatInt(grID, 10) +
+		`,"file":"` + thisFilename + `","line":81,"msg":"a test"}` + "\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
 	}
@@ -98,11 +106,11 @@ func Test_LogS_JSON_no_json_with_filename(t *testing.T) {
 	SetOutput(w)
 	// Start of the actual test
 	S(Verbose, "This won't show")
-	S(Warning, "This will show", Str("key1", "value 1"), Attr("key2", 42)) // line 101
+	S(Warning, "This will show", Str("key1", "value 1"), Attr("key2", 42)) // line 109
 	Printf("This will show too")                                           // no filename/line and shows despite level
 	_ = w.Flush()
 	actual := b.String()
-	expected := "W logger_test.go:101-bar-This will show, key1=\"value 1\", key2=\"42\"\n" +
+	expected := "W logger_test.go:109-bar-This will show, key1=\"value 1\", key2=\"42\"\n" +
 		"I -bar-This will show too\n"
 	if actual != expected {
 		t.Errorf("got %q expected %q", actual, expected)
@@ -127,15 +135,18 @@ func TestColorMode(t *testing.T) {
 	if !Color {
 		t.Errorf("expected to be in color mode after ForceColor=true and SetColorMode()")
 	}
-	S(Warning, "With file and line", Str("attr", "value with space")) // line 130
-	Infof("info with file and line = %v", Config.LogFileAndLine)      // line 131
+	S(Warning, "With file and line", Str("attr", "value with space")) // line 138
+	Infof("info with file and line = %v", Config.LogFileAndLine)      // line 139
 	Config.LogFileAndLine = false
+	Config.GoroutineID = false
 	S(Warning, "Without file and line", Str("attr", "value with space"))
 	Infof("info with file and line = %v", Config.LogFileAndLine)
 	_ = w.Flush()
 	actual := b.String()
-	expected := "\x1b[33mW logger_test.go:130> With file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
-		"\x1b[32mI logger_test.go:131> info with file and line = true\x1b[0m\n" +
+	grID := fmt.Sprintf("[%d] ", goroutine.ID())
+	expected := "\x1b[37m" + grID +
+		"\x1b[33mW logger_test.go:138> With file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
+		"\x1b[37m" + grID + "\x1b[32mI logger_test.go:139> info with file and line = true\x1b[0m\n" +
 		"\x1b[33mW > Without file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
 		"\x1b[32mI > info with file and line = false\x1b[0m\n"
 	if actual != expected {
@@ -610,6 +621,7 @@ func TestTimeToTS(t *testing.T) {
 		{1688763601, 42000, "1688763601.000042"},     // 42 usec after the seconds part, checking for leading zeroes
 		{1688763601, 199999999, "1688763601.199999"}, // nanosec are truncated away not rounded (see note in TimeToTS)
 		{1688763601, 200000999, "1688763601.200000"}, // boundary
+		{1689983019, 142600000, "1689983019.142600"}, // trailing zeroes
 	} {
 		tm := time.Unix(tst.sec, tst.nano)
 		ts := timeToTStr(tm)
@@ -630,6 +642,19 @@ func TestJSONLevelReverse(t *testing.T) {
 	}
 }
 
+// io.Discard but specially known to by logger optimizations for instance.
+type discard struct{}
+
+func (discard) Write(p []byte) (int, error) {
+	return len(p), nil
+}
+
+func (discard) WriteString(s string) (int, error) {
+	return len(s), nil
+}
+
+var Discard = discard{}
+
 func BenchmarkLogDirect1(b *testing.B) {
 	setLevel(Error)
 	for n := 0; n < b.N; n++ {
@@ -641,5 +666,62 @@ func BenchmarkLogDirect2(b *testing.B) {
 	setLevel(Error)
 	for n := 0; n < b.N; n++ {
 		Logf(Debug, "foo bar %d", n)
+	}
+}
+
+func BenchmarkLogSnologNotOptimized(b *testing.B) {
+	setLevel(Error)
+	for n := 0; n < b.N; n++ {
+		S(Debug, "foo bar", Attr("n", n))
+	}
+}
+
+func BenchmarkLogSnologOptimized(b *testing.B) {
+	setLevel(Error)
+	v := ValueType[int]{0}
+	a := KeyVal{Key: "n", Value: &v}
+	for n := 0; n < b.N; n++ {
+		v.Val = n
+		S(Debug, "foo bar", a)
+	}
+}
+
+func BenchmarkLogS_NotOptimized(b *testing.B) {
+	setLevel(Info)
+	Config.JSON = true
+	Config.LogFileAndLine = false
+	Config.ConsoleColor = false
+	Config.ForceColor = false
+	SetOutput(Discard)
+	for n := 0; n < b.N; n++ {
+		S(Info, "foo bar", Attr("n", n))
+	}
+}
+
+func BenchmarkLog_Optimized(b *testing.B) {
+	setLevel(Info)
+	Config.JSON = true
+	Config.LogFileAndLine = false
+	Config.ConsoleColor = false
+	Config.ForceColor = false
+	SetOutput(Discard)
+	v := ValueType[int]{0}
+	a := KeyVal{Key: "n", Value: &v}
+	for n := 0; n < b.N; n++ {
+		v.Val = n
+		S(Info, "foo bar", a)
+	}
+}
+
+func BenchmarkLogOldStyle(b *testing.B) {
+	setLevel(Info)
+	Config.JSON = false
+	Config.LogFileAndLine = false
+	Config.ConsoleColor = false
+	Config.ForceColor = false
+	SetColorMode()
+	SetOutput(Discard)
+	for n := 0; n < b.N; n++ {
+		S(Info, "foo bar", Attr("n", n))
 	}
 }

@@ -32,6 +32,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"fortio.org/log/goroutine"
 )
 
 // Level is the level of logging (0 Debug -> 6 Fatal).
@@ -61,6 +63,8 @@ type LogConfig struct {
 	// Force color mode even if logger output is not console (useful for CI that recognize ansi colors).
 	// SetColorMode() must be called if this or ConsoleColor are changed.
 	ForceColor bool
+	// If true, log the goroutine ID (gid) in json.
+	GoroutineID bool
 }
 
 // DefaultConfig() returns the default initial configuration for the logger, best suited
@@ -76,6 +80,7 @@ func DefaultConfig() *LogConfig {
 		FatalExit:      os.Exit,
 		JSON:           true,
 		ConsoleColor:   true,
+		GoroutineID:    true,
 	}
 }
 
@@ -105,6 +110,8 @@ var (
 		"\"crit\"",
 		"\"fatal\"",
 	}
+	// Reverse mapping of level string used in JSON to Level. Used by https://github.com/fortio/logc
+	// to interpret and colorize pre existing JSON logs.
 	JSONStringLevelToLevel map[string]Level
 )
 
@@ -118,6 +125,7 @@ func SetDefaultsForClientTools() {
 	Config.FatalPanics = false
 	Config.ConsoleColor = true
 	Config.JSON = false
+	Config.GoroutineID = false
 	SetColorMode()
 }
 
@@ -126,6 +134,7 @@ func SetDefaultsForClientTools() {
 // structure.
 type JSONEntry struct {
 	TS    float64 // In seconds since epoch (unix micros resolution), see TimeToTS().
+	GrID  int64   // Goroutine ID (if enabled)
 	Level string
 	File  string
 	Line  int
@@ -328,6 +337,14 @@ func jsonTimestamp() string {
 	return fmt.Sprintf("\"ts\":%.6f,", TimeToTS(time.Now()))
 }
 
+// Returns the json GoRoutineID if enabled.
+func jsonGID() string {
+	if !Config.GoroutineID {
+		return ""
+	}
+	return fmt.Sprintf("\"grid\":%d,", goroutine.ID())
+}
+
 func logPrintf(lvl Level, format string, rest ...interface{}) {
 	if !Log(lvl) {
 		return
@@ -340,22 +357,23 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 		_, file, line, _ := runtime.Caller(3)
 		file = file[strings.LastIndex(file, "/")+1:]
 		if Color {
-			jsonWrite(fmt.Sprintf("%s%s%s %s:%d%s%s%s\n",
-				colorTimestamp(), LevelToColor[lvl], LevelToStrA[lvl][0:1],
+			jsonWrite(fmt.Sprintf("%s%s%s%s %s:%d%s%s%s\n",
+				colorTimestamp(), colorGID(), LevelToColor[lvl], LevelToStrA[lvl][0:1],
 				file, line, Config.LogPrefix, fmt.Sprintf(format, rest...), Colors.Reset))
 		} else if Config.JSON {
-			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"file\":%q,\"line\":%d,\"msg\":%q}\n",
-				jsonTimestamp(), LevelToJSON[lvl], file, line, fmt.Sprintf(format, rest...)))
+			jsonWrite(fmt.Sprintf("{%s\"level\":%s,%s\"file\":%q,\"line\":%d,\"msg\":%q}\n",
+				jsonTimestamp(), LevelToJSON[lvl], jsonGID(), file, line, fmt.Sprintf(format, rest...)))
 		} else {
 			log.Print(LevelToStrA[lvl][0:1], " ", file, ":", line, Config.LogPrefix, fmt.Sprintf(format, rest...))
 		}
 	} else {
 		if Color {
-			jsonWrite(fmt.Sprintf("%s%s%s %s%s%s\n",
-				colorTimestamp(), LevelToColor[lvl], LevelToStrA[lvl][0:1], Config.LogPrefix, fmt.Sprintf(format, rest...), Colors.Reset))
+			jsonWrite(fmt.Sprintf("%s%s%s%s %s%s%s\n",
+				colorTimestamp(), colorGID(), LevelToColor[lvl], LevelToStrA[lvl][0:1], Config.LogPrefix,
+				fmt.Sprintf(format, rest...), Colors.Reset))
 		} else if Config.JSON {
-			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"msg\":%q}\n",
-				jsonTimestamp(), LevelToJSON[lvl], fmt.Sprintf(format, rest...)))
+			jsonWrite(fmt.Sprintf("{%s\"level\":%s,%s\"msg\":%q}\n",
+				jsonTimestamp(), LevelToJSON[lvl], jsonGID(), fmt.Sprintf(format, rest...)))
 		} else {
 			log.Print(LevelToStrA[lvl][0:1], " ", Config.LogPrefix, fmt.Sprintf(format, rest...))
 		}
@@ -505,6 +523,9 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 	if !Log(lvl) {
 		return
 	}
+	// extra := ""
+	// if Config.GoroutineID {
+	// }
 	buf := strings.Builder{}
 	var format string
 	if Color {
@@ -522,18 +543,19 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 		_, file, line, _ := runtime.Caller(1)
 		file = file[strings.LastIndex(file, "/")+1:]
 		if Color {
-			jsonWrite(fmt.Sprintf("%s%s%s %s:%d%s%s%s%s\n",
-				colorTimestamp(), LevelToColor[lvl], LevelToStrA[lvl][0:1], file, line, Config.LogPrefix, msg, buf.String(), Colors.Reset))
+			jsonWrite(fmt.Sprintf("%s%s%s%s %s:%d%s%s%s%s\n",
+				colorTimestamp(), colorGID(), LevelToColor[lvl], LevelToStrA[lvl][0:1],
+				file, line, Config.LogPrefix, msg, buf.String(), Colors.Reset))
 		} else if Config.JSON {
-			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"file\":%q,\"line\":%d,\"msg\":%q%s}\n",
-				jsonTimestamp(), LevelToJSON[lvl], file, line, msg, buf.String()))
+			jsonWrite(fmt.Sprintf("{%s\"level\":%s,%s\"file\":%q,\"line\":%d,\"msg\":%q%s}\n",
+				jsonTimestamp(), LevelToJSON[lvl], jsonGID(), file, line, msg, buf.String()))
 		} else {
 			log.Print(LevelToStrA[lvl][0:1], " ", file, ":", line, Config.LogPrefix, msg, buf.String())
 		}
 	} else {
 		if Color {
-			jsonWrite(fmt.Sprintf("%s%s%s %s%s%s%s\n",
-				colorTimestamp(), LevelToColor[lvl], LevelToStrA[lvl][0:1], Config.LogPrefix, msg, buf.String(), Colors.Reset))
+			jsonWrite(fmt.Sprintf("%s%s%s%s %s%s%s%s\n",
+				colorTimestamp(), colorGID(), LevelToColor[lvl], LevelToStrA[lvl][0:1], Config.LogPrefix, msg, buf.String(), Colors.Reset))
 		} else if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"msg\":%q%s}\n",
 				jsonTimestamp(), LevelToJSON[lvl], msg, buf.String()))
