@@ -41,7 +41,8 @@ var (
 	// these should really be constants but go doesn't have constant structs, arrays etc...
 
 	// ANSI color codes.
-	Colors = color{
+	// These will be reset to empty string if color is disabled (see ColorMode and SetColorMode)
+	colors = color{
 		Reset:     "\033[0m",
 		Red:       "\033[31m",
 		Green:     "\033[32m",
@@ -54,6 +55,7 @@ var (
 		BrightRed: "\033[91m",
 		DarkGray:  "\033[90m",
 	}
+	Colors = colors
 
 	// Mapping of log levels to color.
 	LevelToColor = []string{
@@ -81,8 +83,15 @@ func ConsoleLogging() bool {
 
 // SetColorMode computes whether we currently should be using color text mode or not.
 // Need to be reset if config changes (but is already automatically re evaluated when calling SetOutput()).
+// It will reset the Colors variable to either be the actual escape sequences or empty strings (when
+// color is disabled).
 func SetColorMode() {
 	Color = ColorMode()
+	if Color {
+		Colors = colors
+	} else {
+		Colors = color{}
+	}
 }
 
 // ColorMode returns true if we should be using color text mode, which is either because it's
