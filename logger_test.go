@@ -175,13 +175,14 @@ func TestColorMode(t *testing.T) {
 		t.Errorf("expected LevelToColor to be empty when not color mode, got %q", LevelToColor[Info])
 	}
 	// Show one can mutate/change/tweak colors
-	ANSIColors.Green = "foo"
+	customColor := "foo"
+	ANSIColors.Green = customColor
 	Config.ForceColor = true
 	SetColorMode()
-	if Colors.Green != "foo" {
+	if Colors.Green != customColor {
 		t.Errorf("expected to have color customized, got %q", Colors.Green)
 	}
-	if LevelToColor[Info] != "foo" {
+	if LevelToColor[Info] != customColor {
 		t.Errorf("expected LevelToColor to the custom foo, got %q", LevelToColor[Info])
 	}
 	// put it back to real green for other tests
