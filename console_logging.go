@@ -63,7 +63,7 @@ var (
 	Colors = ANSIColors
 
 	// Mapping of log levels to color.
-	LevelToColor = []string{
+	levelToColor = []string{
 		Colors.Gray,
 		Colors.Cyan,
 		Colors.Green,
@@ -75,6 +75,14 @@ var (
 	// Cached flag for whether to use color output or not.
 	Color = false
 )
+
+// LevelToColor returns the color to use for the given level (or empty string when color mode is disabled).
+func LevelToColor(level Level) string {
+	if !Color {
+		return ""
+	}
+	return levelToColor[level]
+}
 
 // ConsoleLogging is a utility to check if the current logger output is a console (terminal).
 func ConsoleLogging() bool {
