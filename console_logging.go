@@ -97,6 +97,16 @@ func SetColorMode() {
 	} else {
 		Colors = color{}
 	}
+	// Also reset the level to color mapping to empty or customized colors, as needed.
+	LevelToColor = []string{
+		Colors.Gray,
+		Colors.Cyan,
+		Colors.Green,
+		Colors.Yellow,
+		Colors.Red,
+		Colors.Purple,
+		Colors.BrightRed,
+	}
 }
 
 // ColorMode returns true if we should be using color text mode, which is either because it's
