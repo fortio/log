@@ -171,12 +171,18 @@ func TestColorMode(t *testing.T) {
 	if Colors.Green != "" {
 		t.Errorf("expected to have green color empty when not color mode, got %q", Colors.Green)
 	}
+	if LevelToColor[Info] != "" {
+		t.Errorf("expected LevelToColor to be empty when not color mode, got %q", LevelToColor[Info])
+	}
 	// Show one can mutate/change/tweak colors
 	ANSIColors.Green = "foo"
 	Config.ForceColor = true
 	SetColorMode()
 	if Colors.Green != "foo" {
-		t.Errorf("expected to have green color preserved, got %q", Colors.Green)
+		t.Errorf("expected to have color customized, got %q", Colors.Green)
+	}
+	if LevelToColor[Info] != "foo" {
+		t.Errorf("expected LevelToColor to the custom foo, got %q", LevelToColor[Info])
 	}
 	// put it back to real green for other tests
 	ANSIColors.Green = prevGreen
@@ -296,7 +302,7 @@ func TestLoggerJSON(t *testing.T) {
 	if e.File != thisFilename {
 		t.Errorf("unexpected file %q", e.File)
 	}
-	if e.Line < 230 || e.Line > 280 {
+	if e.Line < 270 || e.Line > 310 {
 		t.Errorf("unexpected line %d", e.Line)
 	}
 	ts := e.Time()
