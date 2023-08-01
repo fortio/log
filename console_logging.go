@@ -41,7 +41,7 @@ var (
 	// these should really be constants but go doesn't have constant structs, arrays etc...
 
 	// ANSI color codes.
-	// These will be reset to empty string if color is disabled (see ColorMode and SetColorMode)
+	// These will be reset to empty string if color is disabled (see ColorMode and SetColorMode).
 	colors = color{
 		Reset:     "\033[0m",
 		Red:       "\033[31m",

@@ -158,8 +158,18 @@ func TestColorMode(t *testing.T) {
 	if cs == "" {
 		t.Errorf("got empty color timestamp")
 	}
+	if Colors.Green == "" {
+		t.Errorf("expected to have green color not empty when in color mode")
+	}
 	// Reset for other/further tests
 	Config.ForceColor = false
+	SetColorMode()
+	if Color {
+		t.Errorf("expected to not be in color mode after SetColorMode() and forcecolor false")
+	}
+	if Colors.Green != "" {
+		t.Errorf("expected to have green color empty when not color mode, got %q", Colors.Green)
+	}
 }
 
 func TestSetLevel(t *testing.T) {
