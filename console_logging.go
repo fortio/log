@@ -41,8 +41,9 @@ var (
 	// these should really be constants but go doesn't have constant structs, arrays etc...
 
 	// ANSI color codes.
-	// These will be reset to empty string if color is disabled (see ColorMode and SetColorMode).
-	colors = color{
+	// This isn't meant to be used directly and is here only to document the names of the struct.
+	// Use the Colors variable instead.
+	ANSIColors = color{
 		Reset:     "\033[0m",
 		Red:       "\033[31m",
 		Green:     "\033[32m",
@@ -55,7 +56,11 @@ var (
 		BrightRed: "\033[91m",
 		DarkGray:  "\033[90m",
 	}
-	Colors = colors
+
+	// ANSI color codes or empty depending on ColorMode.
+	// These will be reset to empty string if color is disabled (see ColorMode() and SetColorMode()).
+	// Start with actual colors, will be reset to empty if color is disabled.
+	Colors = ANSIColors
 
 	// Mapping of log levels to color.
 	LevelToColor = []string{
@@ -88,7 +93,7 @@ func ConsoleLogging() bool {
 func SetColorMode() {
 	Color = ColorMode()
 	if Color {
-		Colors = colors
+		Colors = ANSIColors
 	} else {
 		Colors = color{}
 	}

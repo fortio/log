@@ -161,7 +161,8 @@ func TestColorMode(t *testing.T) {
 	if Colors.Green == "" {
 		t.Errorf("expected to have green color not empty when in color mode")
 	}
-	// Reset for other/further tests
+	prevGreen := Colors.Green
+	// turn off color mode
 	Config.ForceColor = false
 	SetColorMode()
 	if Color {
@@ -170,6 +171,18 @@ func TestColorMode(t *testing.T) {
 	if Colors.Green != "" {
 		t.Errorf("expected to have green color empty when not color mode, got %q", Colors.Green)
 	}
+	// Show one can mutate/change/tweak colors
+	ANSIColors.Green = "foo"
+	Config.ForceColor = true
+	SetColorMode()
+	if Colors.Green != "foo" {
+		t.Errorf("expected to have green color preserved, got %q", Colors.Green)
+	}
+	// put it back to real green for other tests
+	ANSIColors.Green = prevGreen
+	// Reset for other/further tests
+	Config.ForceColor = false
+	SetColorMode()
 }
 
 func TestSetLevel(t *testing.T) {

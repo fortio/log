@@ -72,3 +72,5 @@ When on console:
 ![Example console color output](color.png)
 
 JSON formatted logs can also be converted back to text later/after capture and similarly colorized using [fortio.org/logc](https://github.com/fortio/logc#logc)
+
+The `log.Colors` can be used by callers and they'll be empty string when not in color mode, and the ansi escape codes otherwise.
