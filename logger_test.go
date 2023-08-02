@@ -421,9 +421,11 @@ func Test_LogS_JSON_no_json_no_file(t *testing.T) {
 	// Start of the actual test
 	S(Verbose, "This won't show")
 	S(Warning, "This will show", Str("key1", "value 1"), Attr("key2", 42))
+	S(NoLevel, "This NoLevel will show despite logically info level")
 	_ = w.Flush()
 	actual := b.String()
-	expected := "W-foo-This will show, key1=\"value 1\", key2=\"42\"\n"
+	expected := "W-foo-This will show, key1=\"value 1\", key2=\"42\"\n" +
+		"This NoLevel will show despite logically info level\n"
 	if actual != expected {
 		t.Errorf("got %q expected %q", actual, expected)
 	}

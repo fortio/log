@@ -96,7 +96,6 @@ var (
 		"Error",
 		"Critical",
 		"Fatal",
-		"NoLevel",
 	}
 	levelToStrM   map[string]Level
 	levelInternal int32
@@ -371,10 +370,11 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 	if prefix == "" {
 		prefix = " "
 	}
-	lvl1Char := LevelToStrA[lvl][0:1]
+	lvl1Char := ""
 	if lvl == NoLevel {
 		prefix = ""
-		lvl1Char = ""
+	} else {
+		lvl1Char = LevelToStrA[lvl][0:1]
 	}
 	if logFileAndLine { //nolint:nestif
 		_, file, line, _ := runtime.Caller(3)
@@ -566,10 +566,11 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 	if prefix == "" {
 		prefix = " "
 	}
-	lvl1Char := LevelToStrA[lvl][0:1]
+	lvl1Char := ""
 	if lvl == NoLevel {
 		prefix = ""
-		lvl1Char = ""
+	} else {
+		lvl1Char = LevelToStrA[lvl][0:1]
 	}
 	if Config.LogFileAndLine { //nolint:nestif
 		_, file, line, _ := runtime.Caller(1)
