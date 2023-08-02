@@ -106,6 +106,7 @@ func SetColorMode() {
 		Colors.Red,
 		Colors.Purple,
 		Colors.BrightRed,
+		Colors.Green, // NoLevel log.Printf
 	}
 }
 
@@ -129,4 +130,9 @@ func colorGID() string {
 		return ""
 	}
 	return Colors.Gray + fmt.Sprintf("[%d] ", goroutine.ID())
+}
+
+// Longer version when colorizing on console of the level text.
+func colorLevelToStr(lvl Level) string {
+	return LevelToColor[lvl] + LevelToText[lvl] + Colors.DarkGray
 }

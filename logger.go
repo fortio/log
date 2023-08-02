@@ -49,6 +49,7 @@ const (
 	Error
 	Critical
 	Fatal
+	NoLevel
 )
 
 //nolint:revive // we keep "Config" for the variable itself.
@@ -95,6 +96,7 @@ var (
 		"Error",
 		"Critical",
 		"Fatal",
+		"NoLevel",
 	}
 	levelToStrM   map[string]Level
 	levelInternal int32
@@ -109,6 +111,7 @@ var (
 		"\"err\"",
 		"\"crit\"",
 		"\"fatal\"",
+		"\"info\"",
 	}
 	// Used for color version of console logging.
 	LevelToText = []string{
@@ -119,6 +122,7 @@ var (
 		"Err!",
 		"Crit",
 		"Fatal",
+		"",
 	}
 	// Reverse mapping of level string used in JSON to Level. Used by https://github.com/fortio/logc
 	// to interpret and colorize pre existing JSON logs.
@@ -367,6 +371,11 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 	if prefix == "" {
 		prefix = " "
 	}
+	lvl1Char := LevelToStrA[lvl][0:1]
+	if lvl == NoLevel {
+		prefix = ""
+		lvl1Char = ""
+	}
 	if logFileAndLine { //nolint:nestif
 		_, file, line, _ := runtime.Caller(3)
 		file = file[strings.LastIndex(file, "/")+1:]
@@ -378,7 +387,7 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,%s\"file\":%q,\"line\":%d,\"msg\":%q}\n",
 				jsonTimestamp(), LevelToJSON[lvl], jsonGID(), file, line, fmt.Sprintf(format, rest...)))
 		} else {
-			log.Print(LevelToStrA[lvl][0:1], " ", file, ":", line, prefix, fmt.Sprintf(format, rest...))
+			log.Print(lvl1Char, " ", file, ":", line, prefix, fmt.Sprintf(format, rest...))
 		}
 	} else {
 		if Color {
@@ -389,14 +398,14 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,%s\"msg\":%q}\n",
 				jsonTimestamp(), LevelToJSON[lvl], jsonGID(), fmt.Sprintf(format, rest...)))
 		} else {
-			log.Print(LevelToStrA[lvl][0:1], prefix, fmt.Sprintf(format, rest...))
+			log.Print(lvl1Char, prefix, fmt.Sprintf(format, rest...))
 		}
 	}
 }
 
 // Printf forwards to the underlying go logger to print (with only timestamp prefixing).
 func Printf(format string, rest ...interface{}) {
-	logUnconditionalf(false, Info, format, rest...)
+	logUnconditionalf(false, NoLevel, format, rest...)
 }
 
 // SetOutput sets the output to a different writer (forwards to system logger).
@@ -532,10 +541,6 @@ func Attr[T ValueTypes](key string, value T) KeyVal {
 	}
 }
 
-func colorLevelToStr(lvl Level) string {
-	return LevelToColor[lvl] + LevelToText[lvl] + Colors.DarkGray
-}
-
 // S logs a message of the given level with additional attributes.
 func S(lvl Level, msg string, attrs ...KeyVal) {
 	if !Log(lvl) {
@@ -561,6 +566,11 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 	if prefix == "" {
 		prefix = " "
 	}
+	lvl1Char := LevelToStrA[lvl][0:1]
+	if lvl == NoLevel {
+		prefix = ""
+		lvl1Char = ""
+	}
 	if Config.LogFileAndLine { //nolint:nestif
 		_, file, line, _ := runtime.Caller(1)
 		file = file[strings.LastIndex(file, "/")+1:]
@@ -572,7 +582,7 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,%s\"file\":%q,\"line\":%d,\"msg\":%q%s}\n",
 				jsonTimestamp(), LevelToJSON[lvl], jsonGID(), file, line, msg, buf.String()))
 		} else {
-			log.Print(LevelToStrA[lvl][0:1], " ", file, ":", line, prefix, msg, buf.String())
+			log.Print(lvl1Char, " ", file, ":", line, prefix, msg, buf.String())
 		}
 	} else {
 		if Color {
@@ -582,7 +592,7 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"msg\":%q%s}\n",
 				jsonTimestamp(), LevelToJSON[lvl], msg, buf.String()))
 		} else {
-			log.Print(LevelToStrA[lvl][0:1], prefix, msg, buf.String())
+			log.Print(lvl1Char, prefix, msg, buf.String())
 		}
 	}
 }

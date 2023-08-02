@@ -15,7 +15,7 @@ func main() {
 	// Meat of the example: (some of these are reproducing fixed issues in `logc` json->console attributes detection)
 	log.Debugf("This is a debug message ending with backslash \\")
 	log.LogVf("This is a verbose message")
-	log.Printf("This an always printed, file:line omitted message")
+	log.Printf("This an always printed, file:line omitted message (and no level in console)")
 	log.Infof("This is an info message with no attributes but with \"quotes\"...")
 	log.S(log.Info, "This is multi line\n\tstructured info message with 3 attributes",
 		log.Str("attr1", "value1"), log.Attr("attr2", 42), log.Str("attr3", "\"quoted\nvalue\""))

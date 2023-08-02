@@ -59,7 +59,7 @@ func TestLoggerFilenameLine(t *testing.T) {
 	expected := "D logger_test.go:51-prefix-test\n" +
 		"E logger_test.go:53-prefix-SetLogLevel called with level -1 lower than Debug!\n" +
 		"I logger_test.go:54-prefix-Log level is now 3 Warning (was 0 Debug)\n" +
-		"I-prefix-Should show despite being Info - unconditional Printf without line/file\n"
+		"Should show despite being Info - unconditional Printf without line/file\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
 	}
@@ -111,7 +111,7 @@ func Test_LogS_JSON_no_json_with_filename(t *testing.T) {
 	_ = w.Flush()
 	actual := b.String()
 	expected := "W logger_test.go:109-bar-This will show, key1=\"value 1\", key2=\"42\"\n" +
-		"I-bar-This will show too\n"
+		"This will show too\n"
 	if actual != expected {
 		t.Errorf("got %q expected %q", actual, expected)
 	}
@@ -259,7 +259,7 @@ func TestLogger1(t *testing.T) {
 	Critf("testing crit %d", i) // should show
 	expected += "C testing crit 7\n"
 	Printf("Printf should always show n=%d", 8)
-	expected += "I Printf should always show n=8\n"
+	expected += "Printf should always show n=8\n"
 	r := FErrf("FErrf should always show but not exit, n=%d", 9)
 	expected += "F FErrf should always show but not exit, n=9\n"
 	if r != 1 {
