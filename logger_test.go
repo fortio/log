@@ -673,6 +673,14 @@ func TestJSONLevelReverse(t *testing.T) {
 	if lvl != Warning {
 		t.Errorf("unexpected level %d", lvl)
 	}
+	lvl = JSONStringLevelToLevel["info"] // Should be info and not NoLevel (7)
+	if lvl != Info {
+		t.Errorf("unexpected level %d", lvl)
+	}
+	lvl = JSONStringLevelToLevel["fatal"] // Should be info and not NoLevel (7)
+	if lvl != Fatal {
+		t.Errorf("unexpected level %d", lvl)
+	}
 }
 
 func TestNoLevel(t *testing.T) {

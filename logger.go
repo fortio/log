@@ -167,7 +167,7 @@ func init() {
 		levelToStrM[name] = Level(l)
 		levelToStrM[strings.ToLower(name)] = Level(l)
 	}
-	for l, name := range LevelToJSON {
+	for l, name := range LevelToJSON[0 : Fatal+1] { // Skip NoLevel
 		// strip the quotes around
 		JSONStringLevelToLevel[name[1:len(name)-1]] = Level(l)
 	}
