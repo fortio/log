@@ -59,7 +59,7 @@ func TestLoggerFilenameLine(t *testing.T) {
 	expected := "D logger_test.go:51-prefix-test\n" +
 		"E logger_test.go:53-prefix-SetLogLevel called with level -1 lower than Debug!\n" +
 		"I logger_test.go:54-prefix-Log level is now 3 Warning (was 0 Debug)\n" +
-		"I -prefix-Should show despite being Info - unconditional Printf without line/file\n"
+		"Should show despite being Info - unconditional Printf without line/file\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
 	}
@@ -111,7 +111,7 @@ func Test_LogS_JSON_no_json_with_filename(t *testing.T) {
 	_ = w.Flush()
 	actual := b.String()
 	expected := "W logger_test.go:109-bar-This will show, key1=\"value 1\", key2=\"42\"\n" +
-		"I -bar-This will show too\n"
+		"This will show too\n"
 	if actual != expected {
 		t.Errorf("got %q expected %q", actual, expected)
 	}
@@ -128,6 +128,7 @@ func TestColorMode(t *testing.T) {
 	Config = DefaultConfig()
 	Config.ForceColor = true
 	Config.NoTimestamp = true
+	Config.LogPrefix = "" // test it'll be at least one space
 	SetLogLevelQuiet(Info)
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
@@ -135,8 +136,8 @@ func TestColorMode(t *testing.T) {
 	if !Color {
 		t.Errorf("expected to be in color mode after ForceColor=true and SetColorMode()")
 	}
-	S(Warning, "With file and line", Str("attr", "value with space")) // line 138
-	Infof("info with file and line = %v", Config.LogFileAndLine)      // line 139
+	S(Warning, "With file and line", Str("attr", "value with space")) // line 139
+	Infof("info with file and line = %v", Config.LogFileAndLine)      // line 140
 	Config.LogFileAndLine = false
 	Config.GoroutineID = false
 	S(Warning, "Without file and line", Str("attr", "value with space"))
@@ -144,11 +145,11 @@ func TestColorMode(t *testing.T) {
 	_ = w.Flush()
 	actual := b.String()
 	grID := fmt.Sprintf("[%d] ", goroutine.ID())
-	expected := "\x1b[37m" + grID +
-		"\x1b[33mW logger_test.go:138> With file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
-		"\x1b[37m" + grID + "\x1b[32mI logger_test.go:139> info with file and line = true\x1b[0m\n" +
-		"\x1b[33mW > Without file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
-		"\x1b[32mI > info with file and line = false\x1b[0m\n"
+	expected := "\x1b[37m" + grID + "\x1b[33mWarn\x1b[90m logger_test.go:139 " +
+		"\x1b[33mWith file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
+		"\x1b[37m" + grID + "\x1b[32mInfo\x1b[90m logger_test.go:140 \x1b[32minfo with file and line = true\x1b[0m\n" +
+		"\x1b[33mWarn\x1b[90m \x1b[33mWithout file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
+		"\x1b[32mInfo\x1b[90m \x1b[32minfo with file and line = false\x1b[0m\n"
 	if actual != expected {
 		t.Errorf("got:\n%q\nexpected:\n%q", actual, expected)
 	}
@@ -258,7 +259,7 @@ func TestLogger1(t *testing.T) {
 	Critf("testing crit %d", i) // should show
 	expected += "C testing crit 7\n"
 	Printf("Printf should always show n=%d", 8)
-	expected += "I Printf should always show n=8\n"
+	expected += "Printf should always show n=8\n"
 	r := FErrf("FErrf should always show but not exit, n=%d", 9)
 	expected += "F FErrf should always show but not exit, n=9\n"
 	if r != 1 {
@@ -277,7 +278,7 @@ func TestLoggerJSON(t *testing.T) {
 	w := bufio.NewWriter(&b)
 	SetLogLevel(LevelByName("Verbose"))
 	Config.LogFileAndLine = true
-	Config.LogPrefix = "no used"
+	Config.LogPrefix = "not used"
 	Config.JSON = true
 	Config.NoTimestamp = false
 	SetOutput(w)
@@ -420,9 +421,11 @@ func Test_LogS_JSON_no_json_no_file(t *testing.T) {
 	// Start of the actual test
 	S(Verbose, "This won't show")
 	S(Warning, "This will show", Str("key1", "value 1"), Attr("key2", 42))
+	S(NoLevel, "This NoLevel will show despite logically info level")
 	_ = w.Flush()
 	actual := b.String()
-	expected := "W -foo-This will show, key1=\"value 1\", key2=\"42\"\n"
+	expected := "W-foo-This will show, key1=\"value 1\", key2=\"42\"\n" +
+		"This NoLevel will show despite logically info level\n"
 	if actual != expected {
 		t.Errorf("got %q expected %q", actual, expected)
 	}
@@ -669,6 +672,36 @@ func TestJSONLevelReverse(t *testing.T) {
 	lvl := JSONStringLevelToLevel["warn"]
 	if lvl != Warning {
 		t.Errorf("unexpected level %d", lvl)
+	}
+	lvl = JSONStringLevelToLevel["info"] // Should be info and not NoLevel (7)
+	if lvl != Info {
+		t.Errorf("unexpected level %d", lvl)
+	}
+	lvl = JSONStringLevelToLevel["fatal"] // Should be info and not NoLevel (7)
+	if lvl != Fatal {
+		t.Errorf("unexpected level %d", lvl)
+	}
+}
+
+func TestNoLevel(t *testing.T) {
+	Config.ForceColor = true
+	SetColorMode()
+	color := ColorLevelToStr(NoLevel)
+	if color != ANSIColors.DarkGray {
+		t.Errorf("unexpected color %q", color)
+	}
+	Config.ForceColor = false
+	Config.JSON = true
+	Config.ConsoleColor = false
+	Config.NoTimestamp = true
+	Config.GoroutineID = false
+	var buf bytes.Buffer
+	SetOutput(&buf)
+	Printf("test")
+	actual := buf.String()
+	expected := `{"level":"info","msg":"test"}` + "\n"
+	if actual != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
 	}
 }
 
