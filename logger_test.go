@@ -59,7 +59,7 @@ func TestLoggerFilenameLine(t *testing.T) {
 	expected := "D logger_test.go:51-prefix-test\n" +
 		"E logger_test.go:53-prefix-SetLogLevel called with level -1 lower than Debug!\n" +
 		"I logger_test.go:54-prefix-Log level is now 3 Warning (was 0 Debug)\n" +
-		"I -prefix-Should show despite being Info - unconditional Printf without line/file\n"
+		"I-prefix-Should show despite being Info - unconditional Printf without line/file\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
 	}
@@ -111,7 +111,7 @@ func Test_LogS_JSON_no_json_with_filename(t *testing.T) {
 	_ = w.Flush()
 	actual := b.String()
 	expected := "W logger_test.go:109-bar-This will show, key1=\"value 1\", key2=\"42\"\n" +
-		"I -bar-This will show too\n"
+		"I-bar-This will show too\n"
 	if actual != expected {
 		t.Errorf("got %q expected %q", actual, expected)
 	}
@@ -145,10 +145,10 @@ func TestColorMode(t *testing.T) {
 	actual := b.String()
 	grID := fmt.Sprintf("[%d] ", goroutine.ID())
 	expected := "\x1b[37m" + grID +
-		"\x1b[33mW logger_test.go:138> With file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
-		"\x1b[37m" + grID + "\x1b[32mI logger_test.go:139> info with file and line = true\x1b[0m\n" +
-		"\x1b[33mW > Without file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
-		"\x1b[32mI > info with file and line = false\x1b[0m\n"
+		"\x1b[33mWarn\x1b[90m logger_test.go:138> \x1b[33mWith file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
+		"\x1b[37m" + grID + "\x1b[32mInfo\x1b[90m logger_test.go:139> \x1b[32minfo with file and line = true\x1b[0m\n" +
+		"\x1b[33mWarn\x1b[90m> \x1b[33mWithout file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
+		"\x1b[32mInfo\x1b[90m> \x1b[32minfo with file and line = false\x1b[0m\n"
 	if actual != expected {
 		t.Errorf("got:\n%q\nexpected:\n%q", actual, expected)
 	}
@@ -422,7 +422,7 @@ func Test_LogS_JSON_no_json_no_file(t *testing.T) {
 	S(Warning, "This will show", Str("key1", "value 1"), Attr("key2", 42))
 	_ = w.Flush()
 	actual := b.String()
-	expected := "W -foo-This will show, key1=\"value 1\", key2=\"42\"\n"
+	expected := "W-foo-This will show, key1=\"value 1\", key2=\"42\"\n"
 	if actual != expected {
 		t.Errorf("got %q expected %q", actual, expected)
 	}

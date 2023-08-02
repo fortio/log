@@ -110,6 +110,16 @@ var (
 		"\"crit\"",
 		"\"fatal\"",
 	}
+	// Used for color version of console logging.
+	LevelToText = []string{
+		"Debg",
+		"Verb",
+		"Info",
+		"Warn",
+		"Err!",
+		"Crit",
+		"Fatal",
+	}
 	// Reverse mapping of level string used in JSON to Level. Used by https://github.com/fortio/logc
 	// to interpret and colorize pre existing JSON logs.
 	JSONStringLevelToLevel map[string]Level
@@ -523,7 +533,7 @@ func Attr[T ValueTypes](key string, value T) KeyVal {
 }
 
 func colorLevelToStr(lvl Level) string {
-	return LevelToColor[lvl] + LevelToStrA[lvl][0:1] + Colors.DarkGray
+	return LevelToColor[lvl] + LevelToText[lvl] + Colors.DarkGray
 }
 
 // S logs a message of the given level with additional attributes.
