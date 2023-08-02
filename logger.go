@@ -122,7 +122,7 @@ var (
 // Needs to be called before flag.Parse(). Caller could also use log.Printf instead of changing this
 // if not wanting to use levels. Also makes log.Fatalf just exit instead of panic.
 func SetDefaultsForClientTools() {
-	Config.LogPrefix = "> "
+	Config.LogPrefix = " "
 	Config.LogFileAndLine = false
 	Config.FatalPanics = false
 	Config.ConsoleColor = true
