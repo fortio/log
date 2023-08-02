@@ -128,6 +128,7 @@ func TestColorMode(t *testing.T) {
 	Config = DefaultConfig()
 	Config.ForceColor = true
 	Config.NoTimestamp = true
+	Config.LogPrefix = "" // test it'll be at least one space
 	SetLogLevelQuiet(Info)
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
@@ -135,8 +136,8 @@ func TestColorMode(t *testing.T) {
 	if !Color {
 		t.Errorf("expected to be in color mode after ForceColor=true and SetColorMode()")
 	}
-	S(Warning, "With file and line", Str("attr", "value with space")) // line 138
-	Infof("info with file and line = %v", Config.LogFileAndLine)      // line 139
+	S(Warning, "With file and line", Str("attr", "value with space")) // line 139
+	Infof("info with file and line = %v", Config.LogFileAndLine)      // line 140
 	Config.LogFileAndLine = false
 	Config.GoroutineID = false
 	S(Warning, "Without file and line", Str("attr", "value with space"))
@@ -144,11 +145,11 @@ func TestColorMode(t *testing.T) {
 	_ = w.Flush()
 	actual := b.String()
 	grID := fmt.Sprintf("[%d] ", goroutine.ID())
-	expected := "\x1b[37m" + grID + "\x1b[33mWarn\x1b[90m logger_test.go:138> " +	
+	expected := "\x1b[37m" + grID + "\x1b[33mWarn\x1b[90m logger_test.go:139 " +
 		"\x1b[33mWith file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
-		"\x1b[37m" + grID + "\x1b[32mInfo\x1b[90m logger_test.go:139> \x1b[32minfo with file and line = true\x1b[0m\n" +
-		"\x1b[33mWarn\x1b[90m> \x1b[33mWithout file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
-		"\x1b[32mInfo\x1b[90m> \x1b[32minfo with file and line = false\x1b[0m\n"
+		"\x1b[37m" + grID + "\x1b[32mInfo\x1b[90m logger_test.go:140 \x1b[32minfo with file and line = true\x1b[0m\n" +
+		"\x1b[33mWarn\x1b[90m \x1b[33mWithout file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
+		"\x1b[32mInfo\x1b[90m \x1b[32minfo with file and line = false\x1b[0m\n"
 	if actual != expected {
 		t.Errorf("got:\n%q\nexpected:\n%q", actual, expected)
 	}
@@ -277,7 +278,7 @@ func TestLoggerJSON(t *testing.T) {
 	w := bufio.NewWriter(&b)
 	SetLogLevel(LevelByName("Verbose"))
 	Config.LogFileAndLine = true
-	Config.LogPrefix = "no used"
+	Config.LogPrefix = "not used"
 	Config.JSON = true
 	Config.NoTimestamp = false
 	SetOutput(w)
