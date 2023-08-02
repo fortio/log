@@ -682,6 +682,19 @@ func TestNoLevel(t *testing.T) {
 	if color != ANSIColors.DarkGray {
 		t.Errorf("unexpected color %q", color)
 	}
+	Config.ForceColor = false
+	Config.JSON = true
+	Config.ConsoleColor = false
+	Config.NoTimestamp = true
+	Config.GoroutineID = false
+	var buf bytes.Buffer
+	SetOutput(&buf)
+	Printf("test")
+	actual := buf.String()
+	expected := `{"level":"info","msg":"test"}` + "\n"
+	if actual != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
+	}
 }
 
 // io.Discard but specially known to by logger optimizations for instance.

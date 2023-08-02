@@ -110,6 +110,7 @@ var (
 		"\"err\"",
 		"\"crit\"",
 		"\"fatal\"",
+		"\"info\"", // For Printf / NoLevel JSON output
 	}
 	// Reverse mapping of level string used in JSON to Level. Used by https://github.com/fortio/logc
 	// to interpret and colorize pre existing JSON logs.
@@ -160,7 +161,7 @@ func (l *JSONEntry) Time() time.Time {
 func init() {
 	setLevel(Info) // starting value
 	levelToStrM = make(map[string]Level, 2*len(LevelToStrA))
-	JSONStringLevelToLevel = make(map[string]Level, len(LevelToJSON))
+	JSONStringLevelToLevel = make(map[string]Level, len(LevelToJSON)-1) // -1 to not reverse info to NoLevel
 	for l, name := range LevelToStrA {
 		// Allow both -loglevel Verbose and -loglevel verbose ...
 		levelToStrM[name] = Level(l)
