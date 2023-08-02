@@ -71,6 +71,18 @@ var (
 		Colors.Red,
 		Colors.Purple,
 		Colors.BrightRed,
+		Colors.Green, // NoLevel log.Printf
+	}
+	// Used for color version of console logging.
+	LevelToText = []string{
+		"Debg",
+		"Verb",
+		"Info",
+		"Warn",
+		"Err!",
+		"Crit",
+		"Fatal",
+		"",
 	}
 	// Cached flag for whether to use color output or not.
 	Color = false
@@ -133,6 +145,9 @@ func colorGID() string {
 }
 
 // Longer version when colorizing on console of the level text.
-func colorLevelToStr(lvl Level) string {
+func ColorLevelToStr(lvl Level) string {
+	if lvl == NoLevel {
+		return Colors.DarkGray
+	}
 	return LevelToColor[lvl] + LevelToText[lvl] + Colors.DarkGray
 }

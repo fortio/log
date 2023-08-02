@@ -675,6 +675,15 @@ func TestJSONLevelReverse(t *testing.T) {
 	}
 }
 
+func TestNoLevel(t *testing.T) {
+	Config.ForceColor = true
+	SetColorMode()
+	color := ColorLevelToStr(NoLevel)
+	if color != ANSIColors.DarkGray {
+		t.Errorf("unexpected color %q", color)
+	}
+}
+
 // io.Discard but specially known to by logger optimizations for instance.
 type discard struct{}
 

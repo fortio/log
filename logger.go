@@ -110,18 +110,6 @@ var (
 		"\"err\"",
 		"\"crit\"",
 		"\"fatal\"",
-		"\"info\"",
-	}
-	// Used for color version of console logging.
-	LevelToText = []string{
-		"Debg",
-		"Verb",
-		"Info",
-		"Warn",
-		"Err!",
-		"Crit",
-		"Fatal",
-		"",
 	}
 	// Reverse mapping of level string used in JSON to Level. Used by https://github.com/fortio/logc
 	// to interpret and colorize pre existing JSON logs.
@@ -381,7 +369,7 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 		file = file[strings.LastIndex(file, "/")+1:]
 		if Color {
 			jsonWrite(fmt.Sprintf("%s%s%s %s:%d%s%s%s%s\n",
-				colorTimestamp(), colorGID(), colorLevelToStr(lvl),
+				colorTimestamp(), colorGID(), ColorLevelToStr(lvl),
 				file, line, prefix, LevelToColor[lvl], fmt.Sprintf(format, rest...), Colors.Reset))
 		} else if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,%s\"file\":%q,\"line\":%d,\"msg\":%q}\n",
@@ -392,7 +380,7 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 	} else {
 		if Color {
 			jsonWrite(fmt.Sprintf("%s%s%s%s%s%s%s\n",
-				colorTimestamp(), colorGID(), colorLevelToStr(lvl), prefix, LevelToColor[lvl],
+				colorTimestamp(), colorGID(), ColorLevelToStr(lvl), prefix, LevelToColor[lvl],
 				fmt.Sprintf(format, rest...), Colors.Reset))
 		} else if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,%s\"msg\":%q}\n",
@@ -577,7 +565,7 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 		file = file[strings.LastIndex(file, "/")+1:]
 		if Color {
 			jsonWrite(fmt.Sprintf("%s%s%s %s:%d%s%s%s%s%s\n",
-				colorTimestamp(), colorGID(), colorLevelToStr(lvl),
+				colorTimestamp(), colorGID(), ColorLevelToStr(lvl),
 				file, line, prefix, LevelToColor[lvl], msg, buf.String(), Colors.Reset))
 		} else if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,%s\"file\":%q,\"line\":%d,\"msg\":%q%s}\n",
@@ -588,7 +576,7 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 	} else {
 		if Color {
 			jsonWrite(fmt.Sprintf("%s%s%s%s%s%s%s%s\n",
-				colorTimestamp(), colorGID(), colorLevelToStr(lvl), prefix, LevelToColor[lvl], msg, buf.String(), Colors.Reset))
+				colorTimestamp(), colorGID(), ColorLevelToStr(lvl), prefix, LevelToColor[lvl], msg, buf.String(), Colors.Reset))
 		} else if Config.JSON {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"msg\":%q%s}\n",
 				jsonTimestamp(), LevelToJSON[lvl], msg, buf.String()))
