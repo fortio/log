@@ -145,11 +145,11 @@ func TestColorMode(t *testing.T) {
 	_ = w.Flush()
 	actual := b.String()
 	grID := fmt.Sprintf("r%d ", goroutine.ID())
-	expected := "\x1b[37m" + grID + "\x1b[90m[\x1b[33mwrn\x1b[90m] logger_test.go:139 " +
+	expected := "\x1b[37m" + grID + "\x1b[90m[\x1b[33mWRN\x1b[90m] logger_test.go:139 " +
 		"\x1b[33mWith file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
-		"\x1b[37m" + grID + "\x1b[90m[\x1b[32minf\x1b[90m] logger_test.go:140 \x1b[32minfo with file and line = true\x1b[0m\n" +
-		"\x1b[90m[\x1b[33mwrn\x1b[90m] \x1b[33mWithout file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
-		"\x1b[90m[\x1b[32minf\x1b[90m] \x1b[32minfo with file and line = false\x1b[0m\n"
+		"\x1b[37m" + grID + "\x1b[90m[\x1b[32mINF\x1b[90m] logger_test.go:140 \x1b[32minfo with file and line = true\x1b[0m\n" +
+		"\x1b[90m[\x1b[33mWRN\x1b[90m] \x1b[33mWithout file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
+		"\x1b[90m[\x1b[32mINF\x1b[90m] \x1b[32minfo with file and line = false\x1b[0m\n"
 	if actual != expected {
 		t.Errorf("got:\n%q\nexpected:\n%q", actual, expected)
 	}

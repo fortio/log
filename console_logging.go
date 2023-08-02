@@ -75,13 +75,13 @@ var (
 	}
 	// Used for color version of console logging.
 	LevelToText = []string{
-		"dbg",
-		"vrb",
-		"inf",
-		"wrn",
-		"err",
-		"cri",
-		"ftl",
+		"DBG",
+		"VRB",
+		"INF",
+		"WRN",
+		"ERR",
+		"CRI",
+		"FTL",
 		"",
 	}
 	// Cached flag for whether to use color output or not.
