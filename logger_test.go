@@ -144,8 +144,8 @@ func TestColorMode(t *testing.T) {
 	_ = w.Flush()
 	actual := b.String()
 	grID := fmt.Sprintf("[%d] ", goroutine.ID())
-	expected := "\x1b[37m" + grID +
-		"\x1b[33mWarn\x1b[90m logger_test.go:138> \x1b[33mWith file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
+	expected := "\x1b[37m" + grID + "\x1b[33mWarn\x1b[90m logger_test.go:138> " +	
+		"\x1b[33mWith file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
 		"\x1b[37m" + grID + "\x1b[32mInfo\x1b[90m logger_test.go:139> \x1b[32minfo with file and line = true\x1b[0m\n" +
 		"\x1b[33mWarn\x1b[90m> \x1b[33mWithout file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
 		"\x1b[32mInfo\x1b[90m> \x1b[32minfo with file and line = false\x1b[0m\n"
