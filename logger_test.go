@@ -56,9 +56,9 @@ func TestLoggerFilenameLine(t *testing.T) {
 	Printf("Should show despite being Info - unconditional Printf without line/file")
 	w.Flush()
 	actual := b.String()
-	expected := "D logger_test.go:51-prefix-test\n" +
-		"E logger_test.go:53-prefix-SetLogLevel called with level -1 lower than Debug!\n" +
-		"I logger_test.go:54-prefix-Log level is now 3 Warning (was 0 Debug)\n" +
+	expected := "[D] logger_test.go:51-prefix-test\n" +
+		"[E] logger_test.go:53-prefix-SetLogLevel called with level -1 lower than Debug!\n" +
+		"[I] logger_test.go:54-prefix-Log level is now 3 Warning (was 0 Debug)\n" +
 		"Should show despite being Info - unconditional Printf without line/file\n"
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
@@ -110,7 +110,7 @@ func Test_LogS_JSON_no_json_with_filename(t *testing.T) {
 	Printf("This will show too")                                           // no filename/line and shows despite level
 	_ = w.Flush()
 	actual := b.String()
-	expected := "W logger_test.go:109-bar-This will show, key1=\"value 1\", key2=\"42\"\n" +
+	expected := "[W] logger_test.go:109-bar-This will show, key1=\"value 1\", key2=\"42\"\n" +
 		"This will show too\n"
 	if actual != expected {
 		t.Errorf("got %q expected %q", actual, expected)
@@ -144,12 +144,12 @@ func TestColorMode(t *testing.T) {
 	Infof("info with file and line = %v", Config.LogFileAndLine)
 	_ = w.Flush()
 	actual := b.String()
-	grID := fmt.Sprintf("[%d] ", goroutine.ID())
-	expected := "\x1b[37m" + grID + "\x1b[33mWarn\x1b[90m logger_test.go:139 " +
+	grID := fmt.Sprintf("r%d ", goroutine.ID())
+	expected := "\x1b[37m" + grID + "\x1b[90m[\x1b[33mWRN\x1b[90m] logger_test.go:139 " +
 		"\x1b[33mWith file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
-		"\x1b[37m" + grID + "\x1b[32mInfo\x1b[90m logger_test.go:140 \x1b[32minfo with file and line = true\x1b[0m\n" +
-		"\x1b[33mWarn\x1b[90m \x1b[33mWithout file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
-		"\x1b[32mInfo\x1b[90m \x1b[32minfo with file and line = false\x1b[0m\n"
+		"\x1b[37m" + grID + "\x1b[90m[\x1b[32mINF\x1b[90m] logger_test.go:140 \x1b[32minfo with file and line = true\x1b[0m\n" +
+		"\x1b[90m[\x1b[33mWRN\x1b[90m] \x1b[33mWithout file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
+		"\x1b[90m[\x1b[32mINF\x1b[90m] \x1b[32minfo with file and line = false\x1b[0m\n"
 	if actual != expected {
 		t.Errorf("got:\n%q\nexpected:\n%q", actual, expected)
 	}
@@ -221,22 +221,22 @@ func TestLogger1(t *testing.T) {
 	log.SetFlags(0)
 	// Start of the actual test
 	SetLogLevel(LevelByName("Verbose"))
-	expected := "I Log level is now 1 Verbose (was 2 Info)\n"
+	expected := "[I] Log level is now 1 Verbose (was 2 Info)\n"
 	i := 0
 	if LogVerbose() {
 		LogVf("test Va %d", i) // Should show
 	}
 	i++
-	expected += "V test Va 0\n"
+	expected += "[V] test Va 0\n"
 	Warnf("test Wa %d", i) // Should show
 	i++
-	expected += "W test Wa 1\n"
+	expected += "[W] test Wa 1\n"
 	Logger().Printf("test Logger().Printf %d", i)
 	i++
-	expected += "I test Logger().Printf 2\n"
+	expected += "[I] test Logger().Printf 2\n"
 	SetLogLevelQuiet(Debug)                        // no additional logging about level change
 	prevLevel := SetLogLevel(LevelByName("error")) // works with lowercase too
-	expected += "I Log level is now 4 Error (was 0 Debug)\n"
+	expected += "[I] Log level is now 4 Error (was 0 Debug)\n"
 	LogVf("test Vb %d", i)                       // Should not show
 	Infof("test info when level is error %d", i) // Should not show
 	i++
@@ -244,24 +244,24 @@ func TestLogger1(t *testing.T) {
 	i++
 	Errf("test E %d", i) // Should show
 	i++
-	expected += "E test E 5\n"
+	expected += "[E] test E 5\n"
 	// test the rest of the api
 	Logf(LevelByName("Critical"), "test %d level str %s, cur %s", i, prevLevel.String(), GetLogLevel().String())
-	expected += "C test 6 level str Debug, cur Error\n"
+	expected += "[C] test 6 level str Debug, cur Error\n"
 	i++
 	SetLogLevel(Debug) // should be fine and invisible change
 	SetLogLevel(Debug - 1)
-	expected += "E SetLogLevel called with level -1 lower than Debug!\n"
+	expected += "[E] SetLogLevel called with level -1 lower than Debug!\n"
 	SetLogLevel(Fatal) // Hiding critical level is not allowed
-	expected += "E SetLogLevel called with level 6 higher than Critical!\n"
+	expected += "[E] SetLogLevel called with level 6 higher than Critical!\n"
 	SetLogLevel(Critical) // should be fine
-	expected += "I Log level is now 5 Critical (was 0 Debug)\n"
+	expected += "[I] Log level is now 5 Critical (was 0 Debug)\n"
 	Critf("testing crit %d", i) // should show
-	expected += "C testing crit 7\n"
+	expected += "[C] testing crit 7\n"
 	Printf("Printf should always show n=%d", 8)
 	expected += "Printf should always show n=8\n"
 	r := FErrf("FErrf should always show but not exit, n=%d", 9)
-	expected += "F FErrf should always show but not exit, n=9\n"
+	expected += "[F] FErrf should always show but not exit, n=9\n"
 	if r != 1 {
 		t.Errorf("FErrf returned %d instead of 1", r)
 	}
@@ -424,7 +424,7 @@ func Test_LogS_JSON_no_json_no_file(t *testing.T) {
 	S(NoLevel, "This NoLevel will show despite logically info level")
 	_ = w.Flush()
 	actual := b.String()
-	expected := "W-foo-This will show, key1=\"value 1\", key2=\"42\"\n" +
+	expected := "[W]-foo-This will show, key1=\"value 1\", key2=\"42\"\n" +
 		"This NoLevel will show despite logically info level\n"
 	if actual != expected {
 		t.Errorf("got %q expected %q", actual, expected)

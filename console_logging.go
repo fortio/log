@@ -75,13 +75,13 @@ var (
 	}
 	// Used for color version of console logging.
 	LevelToText = []string{
-		"Debg",
-		"Verb",
-		"Info",
-		"Warn",
-		"Err!",
-		"Crit",
-		"Fatal",
+		"DBG",
+		"VRB",
+		"INF",
+		"WRN",
+		"ERR",
+		"CRI",
+		"FTL",
 		"",
 	}
 	// Cached flag for whether to use color output or not.
@@ -141,7 +141,7 @@ func colorGID() string {
 	if !Config.GoroutineID {
 		return ""
 	}
-	return Colors.Gray + fmt.Sprintf("[%d] ", goroutine.ID())
+	return Colors.Gray + fmt.Sprintf("r%d ", goroutine.ID())
 }
 
 // Longer version when colorizing on console of the level text.
@@ -149,5 +149,5 @@ func ColorLevelToStr(lvl Level) string {
 	if lvl == NoLevel {
 		return Colors.DarkGray
 	}
-	return LevelToColor[lvl] + LevelToText[lvl] + Colors.DarkGray
+	return Colors.DarkGray + "[" + LevelToColor[lvl] + LevelToText[lvl] + Colors.DarkGray + "]"
 }

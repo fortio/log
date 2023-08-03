@@ -122,7 +122,7 @@ var (
 // Needs to be called before flag.Parse(). Caller could also use log.Printf instead of changing this
 // if not wanting to use levels. Also makes log.Fatalf just exit instead of panic.
 func SetDefaultsForClientTools() {
-	Config.LogPrefix = "> "
+	Config.LogPrefix = " "
 	Config.LogFileAndLine = false
 	Config.FatalPanics = false
 	Config.ConsoleColor = true
@@ -363,7 +363,7 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 	if lvl == NoLevel {
 		prefix = ""
 	} else {
-		lvl1Char = LevelToStrA[lvl][0:1]
+		lvl1Char = "[" + LevelToStrA[lvl][0:1] + "]"
 	}
 	if logFileAndLine { //nolint:nestif
 		_, file, line, _ := runtime.Caller(3)
@@ -559,7 +559,7 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 	if lvl == NoLevel {
 		prefix = ""
 	} else {
-		lvl1Char = LevelToStrA[lvl][0:1]
+		lvl1Char = "[" + LevelToStrA[lvl][0:1] + "]"
 	}
 	if Config.LogFileAndLine { //nolint:nestif
 		_, file, line, _ := runtime.Caller(1)
