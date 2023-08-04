@@ -17,6 +17,7 @@ package log
 import (
 	"crypto/tls"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -71,4 +72,29 @@ func LogRequest(r *http.Request, msg string, extraAttributes ...KeyVal) {
 		}
 	}
 	S(Info, msg, attr...)
+}
+
+type logWriter struct {
+	source string
+	level  Level
+}
+
+// Returns a Std logger that will log to the given level with the given source attribute.
+// Can be passed for instance to net/http/httputil.ReverseProxy.ErrorLog.
+func NewStdLogger(source string, level Level) *log.Logger {
+	return log.New(logWriter{source, level}, "", 0)
+}
+
+func (w logWriter) Write(p []byte) (n int, err error) {
+	// Force JSON to avoid infinite loop and also skip file/line so it doesn't show this file as the source
+	// (TODO consider passing the level up the stack to look for the caller)
+	s(w.level, false, true, strings.TrimSpace(string(p)), Str("src", w.source))
+	return len(p), nil
+}
+
+// InterceptStandardLogger changes the output of the standard logger to use ours, at the given
+// level, with the source "std", as a catchall.
+func InterceptStandardLogger(level Level) {
+	log.SetFlags(0)
+	log.SetOutput(logWriter{"std", level})
 }

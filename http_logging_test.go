@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"log"
 	"net/http"
 	"testing"
 )
@@ -68,5 +69,41 @@ func TestTLSInfo(t *testing.T) {
 	expected = ""
 	if got != expected {
 		t.Errorf("unexpected for no tls:\n%s\nvs:\n%s\n", got, expected)
+	}
+}
+
+func TestInterceptStandardLogger(t *testing.T) {
+	SetLogLevel(Warning)
+	Config.LogFileAndLine = true
+	Config.JSON = false // check that despite this, it'll be json anyway (so it doesn't go infinite loop)
+	Config.NoTimestamp = true
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	SetOutput(w)
+	InterceptStandardLogger(Warning)
+	log.Printf("\n\na test\n\n")
+	w.Flush()
+	actual := b.String()
+	expected := `{"level":"warn","msg":"a test","src":"std"}` + "\n"
+	if actual != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
+	}
+}
+
+func TestNewStdLogger(t *testing.T) {
+	SetLogLevel(Info)
+	Config.LogFileAndLine = true
+	Config.JSON = false
+	Config.NoTimestamp = true
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	SetOutput(w)
+	logger := NewStdLogger("test src", Info)
+	logger.Printf("\n\nanother test\n\n")
+	w.Flush()
+	actual := b.String()
+	expected := `{"level":"info","msg":"another test","src":"test src"}` + "\n"
+	if actual != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
 	}
 }
