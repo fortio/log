@@ -532,17 +532,18 @@ func Attr[T ValueTypes](key string, value T) KeyVal {
 
 // S logs a message of the given level with additional attributes.
 func S(lvl Level, msg string, attrs ...KeyVal) {
+	s(lvl, Config.LogFileAndLine, Config.JSON, msg, attrs...)
+}
+
+func s(lvl Level, logFileAndLine bool, json bool, msg string, attrs ...KeyVal) {
 	if !Log(lvl) {
 		return
 	}
-	// extra := ""
-	// if Config.GoroutineID {
-	// }
 	buf := strings.Builder{}
 	var format string
 	if Color {
 		format = Colors.Reset + ", " + Colors.Blue + "%s" + Colors.Reset + "=" + LevelToColor[lvl] + "%q"
-	} else if Config.JSON {
+	} else if json {
 		format = ",%q:%q"
 	} else {
 		format = ", %s=%q"
@@ -561,14 +562,14 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 	} else {
 		lvl1Char = "[" + LevelToStrA[lvl][0:1] + "]"
 	}
-	if Config.LogFileAndLine { //nolint:nestif
-		_, file, line, _ := runtime.Caller(1)
+	if logFileAndLine { //nolint:nestif
+		_, file, line, _ := runtime.Caller(2)
 		file = file[strings.LastIndex(file, "/")+1:]
 		if Color {
 			jsonWrite(fmt.Sprintf("%s%s%s %s:%d%s%s%s%s%s\n",
 				colorTimestamp(), colorGID(), ColorLevelToStr(lvl),
 				file, line, prefix, LevelToColor[lvl], msg, buf.String(), Colors.Reset))
-		} else if Config.JSON {
+		} else if json {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,%s\"file\":%q,\"line\":%d,\"msg\":%q%s}\n",
 				jsonTimestamp(), LevelToJSON[lvl], jsonGID(), file, line, msg, buf.String()))
 		} else {
@@ -578,7 +579,7 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 		if Color {
 			jsonWrite(fmt.Sprintf("%s%s%s%s%s%s%s%s\n",
 				colorTimestamp(), colorGID(), ColorLevelToStr(lvl), prefix, LevelToColor[lvl], msg, buf.String(), Colors.Reset))
-		} else if Config.JSON {
+		} else if json {
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"msg\":%q%s}\n",
 				jsonTimestamp(), LevelToJSON[lvl], msg, buf.String()))
 		} else {
