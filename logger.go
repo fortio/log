@@ -17,6 +17,9 @@ Fortio's log is simple logger built on top of go's default one with
 additional opinionated levels similar to glog but simpler to use and configure.
 
 See [Config] object for options like whether to include line number and file name of caller or not etc
+
+So far it's a "global" logger as in you just use the functions in the package directly (e.g log.S())
+and the configuration is global for the process.
 */
 package log // import "fortio.org/log"
 
@@ -479,7 +482,8 @@ func LogVerbose() bool { //nolint:revive
 }
 
 // LoggerI defines a log.Logger like interface to pass to packages
-// for simple logging. See [Logger()].
+// for simple logging. See [Logger()]. See also [NewStdLogger()] for
+// intercepting with same type / when an interface can't be used.
 type LoggerI interface {
 	Printf(format string, rest ...interface{})
 }
@@ -499,18 +503,22 @@ func Logger() LoggerI {
 // Somewhat slog compatible/style logger
 
 type KeyVal struct {
-	Key   string
-	Value fmt.Stringer
-}
-
-type StringValue string
-
-func (s StringValue) String() string {
-	return string(s)
+	Key      string
+	StrValue string
+	Value    fmt.Stringer
+	Cached   bool
 }
 
 func Str(key, value string) KeyVal {
-	return KeyVal{Key: key, Value: StringValue(value)}
+	return KeyVal{Key: key, StrValue: value, Value: nil, Cached: true}
+}
+
+func (v *KeyVal) StringValue() string {
+	if !v.Cached { // Must be the stringer case
+		v.Cached = true
+		v.StrValue = v.Value.String()
+	}
+	return v.StrValue
 }
 
 type ValueTypes interface{ any }
@@ -519,14 +527,14 @@ type ValueType[T ValueTypes] struct {
 	Val T
 }
 
-func (v *ValueType[T]) String() string {
+func (v ValueType[T]) String() string {
 	return fmt.Sprint(v.Val)
 }
 
 func Attr[T ValueTypes](key string, value T) KeyVal {
 	return KeyVal{
 		Key:   key,
-		Value: &ValueType[T]{Val: value},
+		Value: ValueType[T]{Val: value},
 	}
 }
 
@@ -549,7 +557,7 @@ func s(lvl Level, logFileAndLine bool, json bool, msg string, attrs ...KeyVal) {
 		format = ", %s=%q"
 	}
 	for _, attr := range attrs {
-		buf.WriteString(fmt.Sprintf(format, attr.Key, attr.Value.String()))
+		buf.WriteString(fmt.Sprintf(format, attr.Key, attr.StringValue()))
 	}
 	// TODO share code with log.logUnconditionalf yet without extra locks or allocations/buffers?
 	prefix := Config.LogPrefix

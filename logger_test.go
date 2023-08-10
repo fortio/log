@@ -732,20 +732,35 @@ func BenchmarkLogDirect2(b *testing.B) {
 	}
 }
 
-func BenchmarkLogSnologNotOptimized(b *testing.B) {
+func BenchmarkMultipleStrNoLog(b *testing.B) {
 	setLevel(Error)
 	for n := 0; n < b.N; n++ {
-		S(Debug, "foo bar", Attr("n", n))
+		S(Debug, "foo bar", Str("a", "aval"), Str("b", "bval"), Str("c", "cval"), Str("d", "dval"))
+	}
+}
+
+func BenchmarkLogSnologNotOptimized1(b *testing.B) {
+	setLevel(Error)
+	for n := 0; n < b.N; n++ {
+		S(Debug, "foo bar", Attr("n1", n))
+	}
+}
+
+func BenchmarkLogSnologNotOptimized4(b *testing.B) {
+	setLevel(Error)
+	for n := 0; n < b.N; n++ {
+		S(Debug, "foo bar", Attr("n1", n), Attr("n2", n+1), Attr("n3", n+2), Attr("n4", n+3))
 	}
 }
 
 func BenchmarkLogSnologOptimized(b *testing.B) {
 	setLevel(Error)
 	v := ValueType[int]{0}
-	a := KeyVal{Key: "n", Value: &v}
+	aa := KeyVal{Key: "n", Value: &v}
+	ba := Str("b", "bval")
 	for n := 0; n < b.N; n++ {
 		v.Val = n
-		S(Debug, "foo bar", a)
+		S(Debug, "foo bar", aa, ba)
 	}
 }
 
