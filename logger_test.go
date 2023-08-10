@@ -740,16 +740,17 @@ func BenchmarkMultipleStrNoLog(b *testing.B) {
 }
 
 func BenchmarkLogSnologNotOptimized1(b *testing.B) {
-	setLevel(Error)
 	for n := 0; n < b.N; n++ {
-		S(Debug, "foo bar", Attr("n1", n))
+		// Avoid optimization for n < 256 that skews memory number (and combined with truncation gives 0 instead of 1)
+		// https://github.com/golang/go/blob/go1.21.0/src/runtime/iface.go#L493
+		S(Debug, "foo bar", Attr("n1", 12345+n))
 	}
 }
 
 func BenchmarkLogSnologNotOptimized4(b *testing.B) {
-	setLevel(Error)
 	for n := 0; n < b.N; n++ {
-		S(Debug, "foo bar", Attr("n1", n), Attr("n2", n+1), Attr("n3", n+2), Attr("n4", n+3))
+		v := n + 12345
+		S(Debug, "foo bar", Attr("n1", v), Attr("n2", v+1), Attr("n3", v+2), Attr("n4", v+3))
 	}
 }
 
