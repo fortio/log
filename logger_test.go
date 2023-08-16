@@ -427,7 +427,7 @@ func Test_LogS_JSON_no_json_no_file(t *testing.T) {
 	expected := "[W]-foo-This will show, key1=\"value 1\", key2=\"42\"\n" +
 		"This NoLevel will show despite logically info level\n"
 	if actual != expected {
-		t.Errorf("got %q expected %q", actual, expected)
+		t.Errorf("---got:---\n%s\n---expected:---\n%s\n", actual, expected)
 	}
 }
 
@@ -465,6 +465,54 @@ func TestLoggerJSONNoTimestampNoFilename(t *testing.T) {
 	}
 	if e.TS != 0 {
 		t.Errorf("unexpected time should be absent, got %v %v", e.TS, e.Time())
+	}
+}
+
+func TestLoggerSimpleJSON(t *testing.T) {
+	// Setup
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	SetLogLevel(LevelByName("Verbose"))
+	Config.LogFileAndLine = false
+	Config.LogPrefix = "no used"
+	Config.JSON = true
+	Config.NoTimestamp = false
+	SetOutput(w)
+	// Start of the actual test
+	w.WriteString("[")
+	Critf("Test Critf2")
+	w.WriteString(",")
+	S(Critical, "Test Critf3")
+	w.WriteString("]")
+	_ = w.Flush()
+	actual := b.String()
+	e := []JSONEntry{}
+	err := json.Unmarshal([]byte(actual), &e)
+	t.Logf("got: %s -> %#v", actual, e)
+	if err != nil {
+		t.Errorf("unexpected JSON deserialization error %v for %q", err, actual)
+	}
+	if len(e) != 2 {
+		t.Errorf("unexpected number of entries %d", len(e))
+	}
+	for i := 0; i < 2; i++ {
+		e := e[i]
+		if e.Level != "crit" {
+			t.Errorf("unexpected level %s", e.Level)
+		}
+		exp := fmt.Sprintf("Test Critf%d", i+2)
+		if e.Msg != exp {
+			t.Errorf("unexpected body %s", e.Msg)
+		}
+		if e.File != "" {
+			t.Errorf("unexpected file %q", e.File)
+		}
+		if e.Line != 0 {
+			t.Errorf("unexpected line %d", e.Line)
+		}
+		if e.TS == 0 {
+			t.Errorf("unexpected 0 time should have been present")
+		}
 	}
 }
 
@@ -760,7 +808,7 @@ func BenchmarkLogSnologOptimized(b *testing.B) {
 	aa := KeyVal{Key: "n", Value: &v}
 	ba := Str("b", "bval")
 	for n := 0; n < b.N; n++ {
-		v.Val = n
+		v.Val = n + 1235
 		S(Debug, "foo bar", aa, ba)
 	}
 }

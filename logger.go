@@ -24,6 +24,7 @@ and the configuration is global for the process.
 package log // import "fortio.org/log"
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -31,6 +32,7 @@ import (
 	"math"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -176,6 +178,7 @@ func init() {
 	}
 	log.SetFlags(log.Ltime)
 	SetColorMode()
+	jWriter.buf.Grow(2048)
 }
 
 func setLevel(lvl Level) {
@@ -307,14 +310,24 @@ func Logf(lvl Level, format string, rest ...interface{}) {
 
 // Used when doing our own logging writing, in JSON/structured mode.
 var (
-	jsonWriter      io.Writer = os.Stderr
-	jsonWriterMutex sync.Mutex
+	jWriter = jsonWriter{w: os.Stderr, tsBuf: make([]byte, 0, 32)}
 )
 
+type jsonWriter struct {
+	w     io.Writer
+	mutex sync.Mutex
+	buf   bytes.Buffer
+	tsBuf []byte
+}
+
 func jsonWrite(msg string) {
-	jsonWriterMutex.Lock()
-	_, _ = jsonWriter.Write([]byte(msg)) // if we get errors while logging... can't quite ... log errors
-	jsonWriterMutex.Unlock()
+	jsonWriteBytes([]byte(msg))
+}
+
+func jsonWriteBytes(msg []byte) {
+	jWriter.mutex.Lock()
+	_, _ = jWriter.w.Write(msg) // if we get errors while logging... can't quite ... log errors
+	jWriter.mutex.Unlock()
 }
 
 // Converts a time.Time to a float64 timestamp (seconds since epoch at microsecond resolution).
@@ -354,7 +367,26 @@ func logPrintf(lvl Level, format string, rest ...interface{}) {
 	if !Log(lvl) {
 		return
 	}
+	if Config.JSON && !Config.LogFileAndLine && !Color && !Config.NoTimestamp && !Config.GoroutineID && len(rest) == 0 {
+		logSimpleJSON(lvl, format)
+		return
+	}
 	logUnconditionalf(Config.LogFileAndLine, lvl, format, rest...)
+}
+
+func logSimpleJSON(lvl Level, msg string) {
+	jWriter.mutex.Lock()
+	jWriter.buf.Reset()
+	jWriter.buf.WriteString("{\"ts\":")
+	t := TimeToTS(time.Now())
+	jWriter.tsBuf = jWriter.tsBuf[:0] // reset the slice
+	jWriter.tsBuf = strconv.AppendFloat(jWriter.tsBuf, t, 'f', 6, 64)
+	jWriter.buf.Write(jWriter.tsBuf)
+	fmt.Fprintf(&jWriter.buf, ",\"level\":%s,\"msg\":%q}\n",
+		LevelToJSON[lvl],
+		msg)
+	_, _ = jWriter.w.Write(jWriter.buf.Bytes())
+	jWriter.mutex.Unlock()
 }
 
 func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...interface{}) {
@@ -365,8 +397,6 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 	lvl1Char := ""
 	if lvl == NoLevel {
 		prefix = ""
-	} else {
-		lvl1Char = "[" + LevelToStrA[lvl][0:1] + "]"
 	}
 	if logFileAndLine { //nolint:nestif
 		_, file, line, _ := runtime.Caller(3)
@@ -379,6 +409,9 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,%s\"file\":%q,\"line\":%d,\"msg\":%q}\n",
 				jsonTimestamp(), LevelToJSON[lvl], jsonGID(), file, line, fmt.Sprintf(format, rest...)))
 		} else {
+			if lvl != NoLevel {
+				lvl1Char = "[" + LevelToStrA[lvl][0:1] + "]"
+			}
 			log.Print(lvl1Char, " ", file, ":", line, prefix, fmt.Sprintf(format, rest...))
 		}
 	} else {
@@ -387,9 +420,15 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 				colorTimestamp(), colorGID(), ColorLevelToStr(lvl), prefix, LevelToColor[lvl],
 				fmt.Sprintf(format, rest...), Colors.Reset))
 		} else if Config.JSON {
+			if len(rest) != 0 {
+				format = fmt.Sprintf(format, rest...)
+			}
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,%s\"msg\":%q}\n",
-				jsonTimestamp(), LevelToJSON[lvl], jsonGID(), fmt.Sprintf(format, rest...)))
+				jsonTimestamp(), LevelToJSON[lvl], jsonGID(), format))
 		} else {
+			if lvl != NoLevel {
+				lvl1Char = "[" + LevelToStrA[lvl][0:1] + "]"
+			}
 			log.Print(lvl1Char, prefix, fmt.Sprintf(format, rest...))
 		}
 	}
@@ -402,7 +441,7 @@ func Printf(format string, rest ...interface{}) {
 
 // SetOutput sets the output to a different writer (forwards to system logger).
 func SetOutput(w io.Writer) {
-	jsonWriter = w
+	jWriter.w = w
 	log.SetOutput(w)
 	SetColorMode() // Colors.Reset color mode boolean
 }
@@ -545,6 +584,10 @@ func S(lvl Level, msg string, attrs ...KeyVal) {
 
 func s(lvl Level, logFileAndLine bool, json bool, msg string, attrs ...KeyVal) {
 	if !Log(lvl) {
+		return
+	}
+	if Config.JSON && !Config.LogFileAndLine && !Color && !Config.NoTimestamp && !Config.GoroutineID && len(attrs) == 0 {
+		logSimpleJSON(lvl, msg)
 		return
 	}
 	buf := strings.Builder{}

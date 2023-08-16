@@ -90,7 +90,7 @@ var (
 
 // ConsoleLogging is a utility to check if the current logger output is a console (terminal).
 func ConsoleLogging() bool {
-	f, ok := jsonWriter.(*os.File)
+	f, ok := jWriter.w.(*os.File)
 	if !ok {
 		return false
 	}
