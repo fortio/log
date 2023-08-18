@@ -557,7 +557,7 @@ func Str(key, value string) KeyVal {
 	return Any(key, value)
 }
 
-// Few more short cuts
+// Few more slog style short cuts.
 func Int(key string, value int) KeyVal {
 	return Any(key, value)
 }
