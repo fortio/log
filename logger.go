@@ -661,9 +661,9 @@ func s(lvl Level, logFileAndLine bool, json bool, msg string, attrs ...KeyVal) {
 	if Color {
 		format = Colors.Reset + ", " + Colors.Blue + "%s" + Colors.Reset + "=" + LevelToColor[lvl] + "%v"
 	} else if json {
-		format = ",%q:%v"
+		format = ",%q:%s"
 	} else {
-		format = ", %s=%v"
+		format = ", %s=%s"
 	}
 	for _, attr := range attrs {
 		buf.WriteString(fmt.Sprintf(format, attr.Key, attr.StringValue()))
