@@ -136,8 +136,8 @@ func TestColorMode(t *testing.T) {
 	if !Color {
 		t.Errorf("expected to be in color mode after ForceColor=true and SetColorMode()")
 	}
-	S(Warning, "With file and line", Str("attr", "value with space")) // line 139
-	Infof("info with file and line = %v", Config.LogFileAndLine)      // line 140
+	S(Warning, "With file and line", String("attr", "value with space")) // line 139
+	Infof("info with file and line = %v", Config.LogFileAndLine)         // line 140
 	Config.LogFileAndLine = false
 	Config.GoroutineID = false
 	S(Warning, "Without file and line", Str("attr", "value with space"))
@@ -330,7 +330,7 @@ func Test_LogS_JSON(t *testing.T) {
 	now := time.Now()
 	value2 := 42
 	value3 := 3.14
-	S(Verbose, "Test Verbose", Str("key1", "value 1"), Attr("key2", value2), Attr("key3", value3))
+	S(Verbose, "Test Verbose", Str("key1", "value 1"), Int("key2", value2), Float64("key3", value3))
 	_ = w.Flush()
 	actual := b.String()
 	e := JSONEntry{}

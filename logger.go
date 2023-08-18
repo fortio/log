@@ -548,7 +548,29 @@ type KeyVal struct {
 	Cached   bool
 }
 
+// String() is the slog compatible name for Str. Ends up calling Any() anyway.
+func String(key, value string) KeyVal {
+	return Any(key, value)
+}
+
 func Str(key, value string) KeyVal {
+	return Any(key, value)
+}
+
+// Few more short cuts
+func Int(key string, value int) KeyVal {
+	return Any(key, value)
+}
+
+func Int64(key string, value int64) KeyVal {
+	return Any(key, value)
+}
+
+func Float64(key string, value float64) KeyVal {
+	return Any(key, value)
+}
+
+func Bool(key string, value bool) KeyVal {
 	return Any(key, value)
 }
 
