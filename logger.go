@@ -576,9 +576,9 @@ func Bool(key string, value bool) KeyVal {
 }
 
 func (v *KeyVal) StringValue() string {
-	if !v.Cached { // Must be the stringer case
-		v.Cached = true
+	if !v.Cached {
 		v.StrValue = v.Value.String()
+		v.Cached = true
 	}
 	return v.StrValue
 }
