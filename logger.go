@@ -549,7 +549,7 @@ type KeyVal struct {
 }
 
 func Str(key, value string) KeyVal {
-	return KeyVal{Key: key, StrValue: value, Value: nil, Cached: true}
+	return Any(key, value)
 }
 
 func (v *KeyVal) StringValue() string {
@@ -567,10 +567,22 @@ type ValueType[T ValueTypes] struct {
 }
 
 func (v ValueType[T]) String() string {
-	return fmt.Sprint(v.Val)
+	// if the type is numeric, use Sprint(v.val) otherwise use Sprintf("%q", v.Val) to quote it.
+	switch any(v.Val).(type) {
+	case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64,
+		float32, float64:
+		return fmt.Sprintf("%v", v.Val)
+	default:
+		return fmt.Sprintf("%q", fmt.Sprint(v.Val))
+	}
 }
 
+// Our original name, now switched to slog style Any.
 func Attr[T ValueTypes](key string, value T) KeyVal {
+	return Any(key, value)
+}
+
+func Any[T ValueTypes](key string, value T) KeyVal {
 	return KeyVal{
 		Key:   key,
 		Value: ValueType[T]{Val: value},
@@ -593,11 +605,11 @@ func s(lvl Level, logFileAndLine bool, json bool, msg string, attrs ...KeyVal) {
 	buf := strings.Builder{}
 	var format string
 	if Color {
-		format = Colors.Reset + ", " + Colors.Blue + "%s" + Colors.Reset + "=" + LevelToColor[lvl] + "%q"
+		format = Colors.Reset + ", " + Colors.Blue + "%s" + Colors.Reset + "=" + LevelToColor[lvl] + "%v"
 	} else if json {
-		format = ",%q:%q"
+		format = ",%q:%v"
 	} else {
-		format = ", %s=%q"
+		format = ", %s=%v"
 	}
 	for _, attr := range attrs {
 		buf.WriteString(fmt.Sprintf(format, attr.Key, attr.StringValue()))

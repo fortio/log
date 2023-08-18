@@ -110,7 +110,7 @@ func Test_LogS_JSON_no_json_with_filename(t *testing.T) {
 	Printf("This will show too")                                           // no filename/line and shows despite level
 	_ = w.Flush()
 	actual := b.String()
-	expected := "[W] logger_test.go:109-bar-This will show, key1=\"value 1\", key2=\"42\"\n" +
+	expected := "[W] logger_test.go:109-bar-This will show, key1=\"value 1\", key2=42\n" +
 		"This will show too\n"
 	if actual != expected {
 		t.Errorf("got %q expected %q", actual, expected)
@@ -151,7 +151,7 @@ func TestColorMode(t *testing.T) {
 		"\x1b[90m[\x1b[33mWRN\x1b[90m] \x1b[33mWithout file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
 		"\x1b[90m[\x1b[32mINF\x1b[90m] \x1b[32minfo with file and line = false\x1b[0m\n"
 	if actual != expected {
-		t.Errorf("got:\n%q\nexpected:\n%q", actual, expected)
+		t.Errorf("got:\n%s\nexpected:\n%s", actual, expected)
 	}
 	// See color timestamp
 	Config.NoTimestamp = false
@@ -368,11 +368,10 @@ func Test_LogS_JSON(t *testing.T) {
 	if tmp["key1"] != "value 1" {
 		t.Errorf("unexpected key1 %v", tmp["key1"])
 	}
-	// it all gets converted to %q quoted strings - tbd if that's good or bad
-	if tmp["key2"] != "42" {
+	if tmp["key2"] != float64(42) {
 		t.Errorf("unexpected key2 %v", tmp["key2"])
 	}
-	if tmp["key3"] != "3.14" {
+	if tmp["key3"] != 3.14 { // comparing floats with == is dicey but... this passes...
 		t.Errorf("unexpected key3 %v", tmp["key3"])
 	}
 	if tmp["file"] != thisFilename {
@@ -424,7 +423,7 @@ func Test_LogS_JSON_no_json_no_file(t *testing.T) {
 	S(NoLevel, "This NoLevel will show despite logically info level")
 	_ = w.Flush()
 	actual := b.String()
-	expected := "[W]-foo-This will show, key1=\"value 1\", key2=\"42\"\n" +
+	expected := "[W]-foo-This will show, key1=\"value 1\", key2=42\n" +
 		"This NoLevel will show despite logically info level\n"
 	if actual != expected {
 		t.Errorf("---got:---\n%s\n---expected:---\n%s\n", actual, expected)
