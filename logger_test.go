@@ -110,7 +110,7 @@ func Test_LogS_JSON_no_json_with_filename(t *testing.T) {
 	Printf("This will show too")                                           // no filename/line and shows despite level
 	_ = w.Flush()
 	actual := b.String()
-	expected := "[W] logger_test.go:109-bar-This will show, key1=\"value 1\", key2=\"42\"\n" +
+	expected := "[W] logger_test.go:109-bar-This will show, key1=\"value 1\", key2=42\n" +
 		"This will show too\n"
 	if actual != expected {
 		t.Errorf("got %q expected %q", actual, expected)
@@ -136,8 +136,8 @@ func TestColorMode(t *testing.T) {
 	if !Color {
 		t.Errorf("expected to be in color mode after ForceColor=true and SetColorMode()")
 	}
-	S(Warning, "With file and line", Str("attr", "value with space")) // line 139
-	Infof("info with file and line = %v", Config.LogFileAndLine)      // line 140
+	S(Warning, "With file and line", String("attr", "value with space")) // line 139
+	Infof("info with file and line = %v", Config.LogFileAndLine)         // line 140
 	Config.LogFileAndLine = false
 	Config.GoroutineID = false
 	S(Warning, "Without file and line", Str("attr", "value with space"))
@@ -151,7 +151,7 @@ func TestColorMode(t *testing.T) {
 		"\x1b[90m[\x1b[33mWRN\x1b[90m] \x1b[33mWithout file and line\x1b[0m, \x1b[34mattr\x1b[0m=\x1b[33m\"value with space\"\x1b[0m\n" +
 		"\x1b[90m[\x1b[32mINF\x1b[90m] \x1b[32minfo with file and line = false\x1b[0m\n"
 	if actual != expected {
-		t.Errorf("got:\n%q\nexpected:\n%q", actual, expected)
+		t.Errorf("got:\n%s\nexpected:\n%s", actual, expected)
 	}
 	// See color timestamp
 	Config.NoTimestamp = false
@@ -330,7 +330,7 @@ func Test_LogS_JSON(t *testing.T) {
 	now := time.Now()
 	value2 := 42
 	value3 := 3.14
-	S(Verbose, "Test Verbose", Str("key1", "value 1"), Attr("key2", value2), Attr("key3", value3))
+	S(Verbose, "Test Verbose", Str("key1", "value 1"), Int("key2", value2), Float64("key3", value3))
 	_ = w.Flush()
 	actual := b.String()
 	e := JSONEntry{}
@@ -368,11 +368,10 @@ func Test_LogS_JSON(t *testing.T) {
 	if tmp["key1"] != "value 1" {
 		t.Errorf("unexpected key1 %v", tmp["key1"])
 	}
-	// it all gets converted to %q quoted strings - tbd if that's good or bad
-	if tmp["key2"] != "42" {
+	if tmp["key2"] != float64(42) {
 		t.Errorf("unexpected key2 %v", tmp["key2"])
 	}
-	if tmp["key3"] != "3.14" {
+	if tmp["key3"] != 3.14 { // comparing floats with == is dicey but... this passes...
 		t.Errorf("unexpected key3 %v", tmp["key3"])
 	}
 	if tmp["file"] != thisFilename {
@@ -424,10 +423,10 @@ func Test_LogS_JSON_no_json_no_file(t *testing.T) {
 	S(NoLevel, "This NoLevel will show despite logically info level")
 	_ = w.Flush()
 	actual := b.String()
-	expected := "[W]-foo-This will show, key1=\"value 1\", key2=\"42\"\n" +
+	expected := "[W]-foo-This will show, key1=\"value 1\", key2=42\n" +
 		"This NoLevel will show despite logically info level\n"
 	if actual != expected {
-		t.Errorf("got %q expected %q", actual, expected)
+		t.Errorf("---got:---\n%s\n---expected:---\n%s\n", actual, expected)
 	}
 }
 
@@ -465,6 +464,54 @@ func TestLoggerJSONNoTimestampNoFilename(t *testing.T) {
 	}
 	if e.TS != 0 {
 		t.Errorf("unexpected time should be absent, got %v %v", e.TS, e.Time())
+	}
+}
+
+func TestLoggerSimpleJSON(t *testing.T) {
+	// Setup
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	SetLogLevel(LevelByName("Verbose"))
+	Config.LogFileAndLine = false
+	Config.LogPrefix = "no used"
+	Config.JSON = true
+	Config.NoTimestamp = false
+	SetOutput(w)
+	// Start of the actual test
+	w.WriteString("[")
+	Critf("Test Critf2")
+	w.WriteString(",")
+	S(Critical, "Test Critf3")
+	w.WriteString("]")
+	_ = w.Flush()
+	actual := b.String()
+	e := []JSONEntry{}
+	err := json.Unmarshal([]byte(actual), &e)
+	t.Logf("got: %s -> %#v", actual, e)
+	if err != nil {
+		t.Errorf("unexpected JSON deserialization error %v for %q", err, actual)
+	}
+	if len(e) != 2 {
+		t.Errorf("unexpected number of entries %d", len(e))
+	}
+	for i := 0; i < 2; i++ {
+		e := e[i]
+		if e.Level != "crit" {
+			t.Errorf("unexpected level %s", e.Level)
+		}
+		exp := fmt.Sprintf("Test Critf%d", i+2)
+		if e.Msg != exp {
+			t.Errorf("unexpected body %s", e.Msg)
+		}
+		if e.File != "" {
+			t.Errorf("unexpected file %q", e.File)
+		}
+		if e.Line != 0 {
+			t.Errorf("unexpected line %d", e.Line)
+		}
+		if e.TS == 0 {
+			t.Errorf("unexpected 0 time should have been present")
+		}
 	}
 }
 
@@ -732,20 +779,36 @@ func BenchmarkLogDirect2(b *testing.B) {
 	}
 }
 
-func BenchmarkLogSnologNotOptimized(b *testing.B) {
+func BenchmarkMultipleStrNoLog(b *testing.B) {
 	setLevel(Error)
 	for n := 0; n < b.N; n++ {
-		S(Debug, "foo bar", Attr("n", n))
+		S(Debug, "foo bar", Str("a", "aval"), Str("b", "bval"), Str("c", "cval"), Str("d", "dval"))
+	}
+}
+
+func BenchmarkLogSnologNotOptimized1(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		// Avoid optimization for n < 256 that skews memory number (and combined with truncation gives 0 instead of 1)
+		// https://github.com/golang/go/blob/go1.21.0/src/runtime/iface.go#L493
+		S(Debug, "foo bar", Attr("n1", 12345+n))
+	}
+}
+
+func BenchmarkLogSnologNotOptimized4(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		v := n + 12345
+		S(Debug, "foo bar", Attr("n1", v), Attr("n2", v+1), Attr("n3", v+2), Attr("n4", v+3))
 	}
 }
 
 func BenchmarkLogSnologOptimized(b *testing.B) {
 	setLevel(Error)
 	v := ValueType[int]{0}
-	a := KeyVal{Key: "n", Value: &v}
+	aa := KeyVal{Key: "n", Value: &v}
+	ba := Str("b", "bval")
 	for n := 0; n < b.N; n++ {
-		v.Val = n
-		S(Debug, "foo bar", a)
+		v.Val = n + 1235
+		S(Debug, "foo bar", aa, ba)
 	}
 }
 

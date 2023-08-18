@@ -30,7 +30,7 @@ func TestLogRequest(t *testing.T) {
 	w.Flush()
 	actual := b.String()
 	//nolint: lll
-	expected := `{"level":"info","msg":"test1","method":"","url":"<nil>","proto":"","remote_addr":"","host":"foo-host:123","header.x-forwarded-proto":"","header.x-forwarded-for":"","user-agent":"","tls":"true","tls.peer_cn":"x\nyz","header.foo":"bar1,bar2"}
+	expected := `{"level":"info","msg":"test1","method":"","url":"<nil>","proto":"","remote_addr":"","host":"foo-host:123","header.x-forwarded-proto":"","header.x-forwarded-for":"","user-agent":"","tls":true,"tls.peer_cn":"x\nyz","header.foo":"bar1,bar2"}
 {"level":"info","msg":"test2","method":"","url":"<nil>","proto":"","remote_addr":"","host":"foo-host:123","header.x-forwarded-proto":"","header.x-forwarded-for":"","user-agent":"","extra1":"v1","extra2":"v2"}
 `
 	if actual != expected {

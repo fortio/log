@@ -48,7 +48,7 @@ The timestamp `ts` is in seconds.microseconds since epoch (golang UnixMicro() sp
 
 Since 1.8 the Go Routine ID is present in json (`r` field) or colorized log output (for multi threaded server types).
 
-Optional additional `KeyValue` pairs can be added to the base structure using the new `log.S` or passed to `log.LogRequest` using `log.Attr` and `log.Str`.
+Optional additional `KeyValue` pairs can be added to the base structure using the new `log.S` or passed to `log.LogRequest` using `log.Any` and `log.Str`. Note that numbers, as well as arrays of any type and maps of string keys to any type are supported (but more expensive to serialize recursively).
 
 If console output is detected (and ConsoleColor is true, which is the default) or if ForceColor is set, colorized output similar to `logc` will be done instead of JSON. [levelsDemo/levels.go](levelsDemo/levels.go) produces the following output:
 
@@ -58,7 +58,7 @@ When output is redirected, JSON output:
 {"ts":1689986143.463374,"level":"trace","r":1,"file":"levels.go","line":17,"msg":"This is a verbose message"}
 {"ts":1689986143.463378,"level":"info","r":1,"msg":"This an always printed, file:line omitted message"}
 {"ts":1689986143.463382,"level":"info","r":1,"file":"levels.go","line":19,"msg":"This is an info message with no attributes but with \"quotes\"..."}
-{"ts":1689986143.463389,"level":"info","r":1,"file":"levels.go","line":20,"msg":"This is multi line\n\tstructured info message with 3 attributes","attr1":"value1","attr2":"42","attr3":"\"quoted\nvalue\""}
+{"ts":1689986143.463389,"level":"info","r":1,"file":"levels.go","line":20,"msg":"This is multi line\n\tstructured info message with 3 attributes","attr1":"value1","attr2":42,"attr3":"\"quoted\nvalue\""}
 {"ts":1689986143.463396,"level":"warn","r":1,"file":"levels.go","line":22,"msg":"This is a warning message"}
 {"ts":1689986143.4634,"level":"err","r":1,"file":"levels.go","line":23,"msg":"This is an error message"}
 {"ts":1689986143.463403,"level":"crit","r":1,"file":"levels.go","line":24,"msg":"This is a critical message"}

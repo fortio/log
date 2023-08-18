@@ -17,10 +17,14 @@ Fortio's log is simple logger built on top of go's default one with
 additional opinionated levels similar to glog but simpler to use and configure.
 
 See [Config] object for options like whether to include line number and file name of caller or not etc
+
+So far it's a "global" logger as in you just use the functions in the package directly (e.g log.S())
+and the configuration is global for the process.
 */
 package log // import "fortio.org/log"
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -28,6 +32,8 @@ import (
 	"math"
 	"os"
 	"runtime"
+	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -173,6 +179,7 @@ func init() {
 	}
 	log.SetFlags(log.Ltime)
 	SetColorMode()
+	jWriter.buf.Grow(2048)
 }
 
 func setLevel(lvl Level) {
@@ -304,14 +311,24 @@ func Logf(lvl Level, format string, rest ...interface{}) {
 
 // Used when doing our own logging writing, in JSON/structured mode.
 var (
-	jsonWriter      io.Writer = os.Stderr
-	jsonWriterMutex sync.Mutex
+	jWriter = jsonWriter{w: os.Stderr, tsBuf: make([]byte, 0, 32)}
 )
 
+type jsonWriter struct {
+	w     io.Writer
+	mutex sync.Mutex
+	buf   bytes.Buffer
+	tsBuf []byte
+}
+
 func jsonWrite(msg string) {
-	jsonWriterMutex.Lock()
-	_, _ = jsonWriter.Write([]byte(msg)) // if we get errors while logging... can't quite ... log errors
-	jsonWriterMutex.Unlock()
+	jsonWriteBytes([]byte(msg))
+}
+
+func jsonWriteBytes(msg []byte) {
+	jWriter.mutex.Lock()
+	_, _ = jWriter.w.Write(msg) // if we get errors while logging... can't quite ... log errors
+	jWriter.mutex.Unlock()
 }
 
 // Converts a time.Time to a float64 timestamp (seconds since epoch at microsecond resolution).
@@ -351,7 +368,26 @@ func logPrintf(lvl Level, format string, rest ...interface{}) {
 	if !Log(lvl) {
 		return
 	}
+	if Config.JSON && !Config.LogFileAndLine && !Color && !Config.NoTimestamp && !Config.GoroutineID && len(rest) == 0 {
+		logSimpleJSON(lvl, format)
+		return
+	}
 	logUnconditionalf(Config.LogFileAndLine, lvl, format, rest...)
+}
+
+func logSimpleJSON(lvl Level, msg string) {
+	jWriter.mutex.Lock()
+	jWriter.buf.Reset()
+	jWriter.buf.WriteString("{\"ts\":")
+	t := TimeToTS(time.Now())
+	jWriter.tsBuf = jWriter.tsBuf[:0] // reset the slice
+	jWriter.tsBuf = strconv.AppendFloat(jWriter.tsBuf, t, 'f', 6, 64)
+	jWriter.buf.Write(jWriter.tsBuf)
+	fmt.Fprintf(&jWriter.buf, ",\"level\":%s,\"msg\":%q}\n",
+		LevelToJSON[lvl],
+		msg)
+	_, _ = jWriter.w.Write(jWriter.buf.Bytes())
+	jWriter.mutex.Unlock()
 }
 
 func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...interface{}) {
@@ -362,8 +398,6 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 	lvl1Char := ""
 	if lvl == NoLevel {
 		prefix = ""
-	} else {
-		lvl1Char = "[" + LevelToStrA[lvl][0:1] + "]"
 	}
 	if logFileAndLine { //nolint:nestif
 		_, file, line, _ := runtime.Caller(3)
@@ -376,6 +410,9 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,%s\"file\":%q,\"line\":%d,\"msg\":%q}\n",
 				jsonTimestamp(), LevelToJSON[lvl], jsonGID(), file, line, fmt.Sprintf(format, rest...)))
 		} else {
+			if lvl != NoLevel {
+				lvl1Char = "[" + LevelToStrA[lvl][0:1] + "]"
+			}
 			log.Print(lvl1Char, " ", file, ":", line, prefix, fmt.Sprintf(format, rest...))
 		}
 	} else {
@@ -384,9 +421,15 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 				colorTimestamp(), colorGID(), ColorLevelToStr(lvl), prefix, LevelToColor[lvl],
 				fmt.Sprintf(format, rest...), Colors.Reset))
 		} else if Config.JSON {
+			if len(rest) != 0 {
+				format = fmt.Sprintf(format, rest...)
+			}
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,%s\"msg\":%q}\n",
-				jsonTimestamp(), LevelToJSON[lvl], jsonGID(), fmt.Sprintf(format, rest...)))
+				jsonTimestamp(), LevelToJSON[lvl], jsonGID(), format))
 		} else {
+			if lvl != NoLevel {
+				lvl1Char = "[" + LevelToStrA[lvl][0:1] + "]"
+			}
 			log.Print(lvl1Char, prefix, fmt.Sprintf(format, rest...))
 		}
 	}
@@ -399,7 +442,7 @@ func Printf(format string, rest ...interface{}) {
 
 // SetOutput sets the output to a different writer (forwards to system logger).
 func SetOutput(w io.Writer) {
-	jsonWriter = w
+	jWriter.w = w
 	log.SetOutput(w)
 	SetColorMode() // Colors.Reset color mode boolean
 }
@@ -479,7 +522,8 @@ func LogVerbose() bool { //nolint:revive
 }
 
 // LoggerI defines a log.Logger like interface to pass to packages
-// for simple logging. See [Logger()].
+// for simple logging. See [Logger()]. See also [NewStdLogger()] for
+// intercepting with same type / when an interface can't be used.
 type LoggerI interface {
 	Printf(format string, rest ...interface{})
 }
@@ -499,18 +543,44 @@ func Logger() LoggerI {
 // Somewhat slog compatible/style logger
 
 type KeyVal struct {
-	Key   string
-	Value fmt.Stringer
+	Key      string
+	StrValue string
+	Value    fmt.Stringer
+	Cached   bool
 }
 
-type StringValue string
-
-func (s StringValue) String() string {
-	return string(s)
+// String() is the slog compatible name for Str. Ends up calling Any() anyway.
+func String(key, value string) KeyVal {
+	return Any(key, value)
 }
 
 func Str(key, value string) KeyVal {
-	return KeyVal{Key: key, Value: StringValue(value)}
+	return Any(key, value)
+}
+
+// Few more slog style short cuts.
+func Int(key string, value int) KeyVal {
+	return Any(key, value)
+}
+
+func Int64(key string, value int64) KeyVal {
+	return Any(key, value)
+}
+
+func Float64(key string, value float64) KeyVal {
+	return Any(key, value)
+}
+
+func Bool(key string, value bool) KeyVal {
+	return Any(key, value)
+}
+
+func (v *KeyVal) StringValue() string {
+	if !v.Cached {
+		v.StrValue = v.Value.String()
+		v.Cached = true
+	}
+	return v.StrValue
 }
 
 type ValueTypes interface{ any }
@@ -519,14 +589,65 @@ type ValueType[T ValueTypes] struct {
 	Val T
 }
 
-func (v *ValueType[T]) String() string {
-	return fmt.Sprint(v.Val)
+func arrayToString(s []interface{}) string {
+	var buf strings.Builder
+	buf.WriteString("[")
+	for i, e := range s {
+		if i != 0 {
+			buf.WriteString(",")
+		}
+		vv := ValueType[interface{}]{Val: e}
+		buf.WriteString(vv.String())
+	}
+	buf.WriteString("]")
+	return buf.String()
 }
 
+func mapToString(s map[string]interface{}) string {
+	var buf strings.Builder
+	buf.WriteString("{")
+	keys := make([]string, 0, len(s))
+	for k := range s {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for i, k := range keys {
+		if i != 0 {
+			buf.WriteString(",")
+		}
+		buf.WriteString(fmt.Sprintf("%q", k))
+		buf.WriteString(":")
+		vv := ValueType[interface{}]{Val: s[k]}
+		buf.WriteString(vv.String())
+	}
+	buf.WriteString("}")
+	return buf.String()
+}
+
+func (v ValueType[T]) String() string {
+	// if the type is numeric, use Sprint(v.val) otherwise use Sprintf("%q", v.Val) to quote it.
+	switch s := any(v.Val).(type) {
+	case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64,
+		float32, float64:
+		return fmt.Sprint(v.Val)
+	case []interface{}:
+		return arrayToString(s)
+	case map[string]interface{}:
+		return mapToString(s)
+	default:
+		return fmt.Sprintf("%q", fmt.Sprint(v.Val))
+	}
+}
+
+// Our original name, now switched to slog style Any.
 func Attr[T ValueTypes](key string, value T) KeyVal {
+	return Any(key, value)
+}
+
+func Any[T ValueTypes](key string, value T) KeyVal {
 	return KeyVal{
 		Key:   key,
-		Value: &ValueType[T]{Val: value},
+		Value: ValueType[T]{Val: value},
 	}
 }
 
@@ -539,17 +660,21 @@ func s(lvl Level, logFileAndLine bool, json bool, msg string, attrs ...KeyVal) {
 	if !Log(lvl) {
 		return
 	}
+	if Config.JSON && !Config.LogFileAndLine && !Color && !Config.NoTimestamp && !Config.GoroutineID && len(attrs) == 0 {
+		logSimpleJSON(lvl, msg)
+		return
+	}
 	buf := strings.Builder{}
 	var format string
 	if Color {
-		format = Colors.Reset + ", " + Colors.Blue + "%s" + Colors.Reset + "=" + LevelToColor[lvl] + "%q"
+		format = Colors.Reset + ", " + Colors.Blue + "%s" + Colors.Reset + "=" + LevelToColor[lvl] + "%v"
 	} else if json {
-		format = ",%q:%q"
+		format = ",%q:%s"
 	} else {
-		format = ", %s=%q"
+		format = ", %s=%s"
 	}
 	for _, attr := range attrs {
-		buf.WriteString(fmt.Sprintf(format, attr.Key, attr.Value.String()))
+		buf.WriteString(fmt.Sprintf(format, attr.Key, attr.StringValue()))
 	}
 	// TODO share code with log.logUnconditionalf yet without extra locks or allocations/buffers?
 	prefix := Config.LogPrefix
