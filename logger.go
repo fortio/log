@@ -589,43 +589,51 @@ type ValueType[T ValueTypes] struct {
 	Val T
 }
 
+func arrayToString(s []interface{}) string {
+	var buf strings.Builder
+	buf.WriteString("[")
+	for i, e := range s {
+		if i != 0 {
+			buf.WriteString(",")
+		}
+		vv := ValueType[interface{}]{Val: e}
+		buf.WriteString(vv.String())
+	}
+	buf.WriteString("]")
+	return buf.String()
+}
+
+func mapToString(s map[string]interface{}) string {
+	var buf strings.Builder
+	buf.WriteString("{")
+	keys := make([]string, 0, len(s))
+	for k := range s {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for i, k := range keys {
+		if i != 0 {
+			buf.WriteString(",")
+		}
+		buf.WriteString(fmt.Sprintf("%q", k))
+		buf.WriteString(":")
+		vv := ValueType[interface{}]{Val: s[k]}
+		buf.WriteString(vv.String())
+	}
+	buf.WriteString("}")
+	return buf.String()
+}
+
 func (v ValueType[T]) String() string {
 	// if the type is numeric, use Sprint(v.val) otherwise use Sprintf("%q", v.Val) to quote it.
 	switch s := any(v.Val).(type) {
 	case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64,
 		float32, float64:
-		return fmt.Sprintf("%v", v.Val)
+		return fmt.Sprint(v.Val)
 	case []interface{}:
-		var buf strings.Builder
-		buf.WriteString("[")
-		for i, e := range s {
-			if i != 0 {
-				buf.WriteString(",")
-			}
-			vv := ValueType[interface{}]{Val: e}
-			buf.WriteString(vv.String())
-		}
-		buf.WriteString("]")
-		return buf.String()
+		return arrayToString(s)
 	case map[string]interface{}:
-		var buf strings.Builder
-		buf.WriteString("{")
-		keys := make([]string, 0, len(s))
-		for k := range s {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		for i, k := range keys {
-			if i != 0 {
-				buf.WriteString(",")
-			}
-			buf.WriteString(fmt.Sprintf("%q", k))
-			buf.WriteString(":")
-			vv := ValueType[interface{}]{Val: s[k]}
-			buf.WriteString(vv.String())
-		}
-		buf.WriteString("}")
-		return buf.String()
+		return mapToString(s)
 	default:
 		return fmt.Sprintf("%q", fmt.Sprint(v.Val))
 	}
