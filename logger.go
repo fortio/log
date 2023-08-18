@@ -584,6 +584,22 @@ func (v ValueType[T]) String() string {
 		}
 		buf.WriteString("]")
 		return buf.String()
+	case map[string]interface{}:
+		var buf strings.Builder
+		buf.WriteString("{")
+		first := true
+		for k, e := range s {
+			if !first {
+				buf.WriteString(",")
+			}
+			buf.WriteString(fmt.Sprintf("%q", k))
+			buf.WriteString(":")
+			first = false
+			vv := ValueType[interface{}]{Val: e}
+			buf.WriteString(vv.String())
+		}
+		buf.WriteString("}")
+		return buf.String()
 	default:
 		return fmt.Sprintf("%q", fmt.Sprint(v.Val))
 	}
