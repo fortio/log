@@ -32,6 +32,7 @@ import (
 	"math"
 	"os"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -609,15 +610,18 @@ func (v ValueType[T]) String() string {
 	case map[string]interface{}:
 		var buf strings.Builder
 		buf.WriteString("{")
-		first := true
-		for k, e := range s {
-			if !first {
+		keys := make([]string, 0, len(s))
+		for k := range s {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for i, k := range keys {
+			if i != 0 {
 				buf.WriteString(",")
 			}
 			buf.WriteString(fmt.Sprintf("%q", k))
 			buf.WriteString(":")
-			first = false
-			vv := ValueType[interface{}]{Val: e}
+			vv := ValueType[interface{}]{Val: s[k]}
 			buf.WriteString(vv.String())
 		}
 		buf.WriteString("}")
