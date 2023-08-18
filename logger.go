@@ -568,10 +568,22 @@ type ValueType[T ValueTypes] struct {
 
 func (v ValueType[T]) String() string {
 	// if the type is numeric, use Sprint(v.val) otherwise use Sprintf("%q", v.Val) to quote it.
-	switch any(v.Val).(type) {
+	switch s := any(v.Val).(type) {
 	case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64,
 		float32, float64:
 		return fmt.Sprintf("%v", v.Val)
+	case []interface{}:
+		var buf strings.Builder
+		buf.WriteString("[")
+		for i, e := range s {
+			if i != 0 {
+				buf.WriteString(",")
+			}
+			vv := ValueType[interface{}]{Val: e}
+			buf.WriteString(vv.String())
+		}
+		buf.WriteString("]")
+		return buf.String()
 	default:
 		return fmt.Sprintf("%q", fmt.Sprint(v.Val))
 	}
