@@ -92,6 +92,7 @@ func DefaultConfig() *LogConfig {
 }
 
 var (
+	// Config for the global/base logger.
 	Config = DefaultConfig()
 	// Used for dynamic flag setting as strings and validation.
 	LevelToStrA = []string{
@@ -121,6 +122,8 @@ var (
 	// Reverse mapping of level string used in JSON to Level. Used by https://github.com/fortio/logc
 	// to interpret and colorize pre existing JSON logs.
 	JSONStringLevelToLevel map[string]Level
+	// Global logger.
+	gLog = New(Config)
 )
 
 // SetDefaultsForClientTools changes the default value of LogPrefix and LogFileAndLine
@@ -391,7 +394,11 @@ func logSimpleJSON(lvl Level, msg string) {
 }
 
 func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...interface{}) {
-	prefix := Config.LogPrefix
+	gLog.logUnconditionalf(logFileAndLine, lvl, format, rest...)
+}
+
+func (l *ContexLogger) logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...interface{}) {
+	prefix := l.Config.LogPrefix
 	if prefix == "" {
 		prefix = " "
 	}
