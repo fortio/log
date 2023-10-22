@@ -25,6 +25,7 @@ package log // import "fortio.org/log"
 
 import (
 	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -32,7 +33,6 @@ import (
 	"math"
 	"os"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -589,6 +589,7 @@ type ValueType[T ValueTypes] struct {
 	Val T
 }
 
+/*
 func arrayToString(s []interface{}) string {
 	var buf strings.Builder
 	buf.WriteString("[")
@@ -623,19 +624,30 @@ func mapToString(s map[string]interface{}) string {
 	buf.WriteString("}")
 	return buf.String()
 }
+*/
+
+func toJSON[T ValueTypes](v T) string {
+	bytes, err := json.Marshal(v)
+	if err != nil {
+		return fmt.Sprintf("ERR marshaling %v: %v", v, err)
+	}
+	return string(bytes)
+}
 
 func (v ValueType[T]) String() string {
 	// if the type is numeric, use Sprint(v.val) otherwise use Sprintf("%q", v.Val) to quote it.
-	switch s := any(v.Val).(type) {
+	switch /*s :=*/ any(v.Val).(type) {
 	case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64,
 		float32, float64:
 		return fmt.Sprint(v.Val)
+	/* It's all handled by json fallback now - todo test if this is/was cheaper?
 	case []interface{}:
 		return arrayToString(s)
 	case map[string]interface{}:
 		return mapToString(s)
+	*/
 	default:
-		return fmt.Sprintf("%q", fmt.Sprint(v.Val))
+		return toJSON(v.Val) // was fmt.Sprintf("%q", fmt.Sprint(v.Val))
 	}
 }
 
