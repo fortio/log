@@ -626,23 +626,36 @@ func mapToString(s map[string]interface{}) string {
 }
 */
 
-func toJSON[T ValueTypes](v T) string {
+func toJSON(v any) string {
+	e, isError := v.(error) // Remember and cast only once if this is an error type or not
+	if isError {
+		// Check for nil explicitly if v is an error
+		if e == nil {
+			return "null"
+		}
+	}
 	bytes, err := json.Marshal(v)
 	if err != nil {
 		return fmt.Sprintf("ERR marshaling %v: %v", v, err)
 	}
-	return string(bytes)
+	str := string(bytes)
+	// This is kinda hacky way to handle both structured and custom serialization errors, and
+	// struct with no public fields for which we need to call Error() to get a useful string.
+	if isError && str == "{}" {
+		return fmt.Sprintf("%q", e.Error())
+	}
+	return str
 }
 
 func (v ValueType[T]) String() string {
 	// if the type is numeric, use Sprint(v.val) otherwise use Sprintf("%q", v.Val) to quote it.
-	switch s := any(v.Val).(type) {
+	switch /*s :=*/ any(v.Val).(type) {
 	case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64,
 		float32, float64:
 		return fmt.Sprint(v.Val)
+	/* It's all handled by json fallback now - todo test if this is/was cheaper?
 	case error: // struct with no public fields so we need to call Error() to get a string. otherwise we get {}
 		return fmt.Sprintf("%q", s.Error())
-	/* It's all handled by json fallback now - todo test if this is/was cheaper?
 	case []interface{}:
 		return arrayToString(s)
 	case map[string]interface{}:
