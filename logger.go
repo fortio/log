@@ -627,13 +627,6 @@ func mapToString(s map[string]interface{}) string {
 */
 
 func toJSON(v any) string {
-	e, isError := v.(error) // Remember and cast only once if this is an error type or not
-	if isError {
-		// Check for nil explicitly if v is an error
-		if e == nil {
-			return "null"
-		}
-	}
 	bytes, err := json.Marshal(v)
 	if err != nil {
 		return fmt.Sprintf("ERR marshaling %v: %v", v, err)
@@ -641,7 +634,7 @@ func toJSON(v any) string {
 	str := string(bytes)
 	// This is kinda hacky way to handle both structured and custom serialization errors, and
 	// struct with no public fields for which we need to call Error() to get a useful string.
-	if isError && str == "{}" {
+	if e, isError := v.(error); isError && str == "{}" {
 		return fmt.Sprintf("%q", e.Error())
 	}
 	return str
