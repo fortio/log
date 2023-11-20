@@ -25,6 +25,7 @@ package log // import "fortio.org/log"
 
 import (
 	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -32,7 +33,6 @@ import (
 	"math"
 	"os"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -589,39 +589,18 @@ type ValueType[T ValueTypes] struct {
 	Val T
 }
 
-func arrayToString(s []interface{}) string {
-	var buf strings.Builder
-	buf.WriteString("[")
-	for i, e := range s {
-		if i != 0 {
-			buf.WriteString(",")
-		}
-		vv := ValueType[interface{}]{Val: e}
-		buf.WriteString(vv.String())
+func toJSON(v any) string {
+	bytes, err := json.Marshal(v)
+	if err != nil {
+		return strconv.Quote(fmt.Sprintf("ERR marshaling %v: %v", v, err))
 	}
-	buf.WriteString("]")
-	return buf.String()
-}
-
-func mapToString(s map[string]interface{}) string {
-	var buf strings.Builder
-	buf.WriteString("{")
-	keys := make([]string, 0, len(s))
-	for k := range s {
-		keys = append(keys, k)
+	str := string(bytes)
+	// This is kinda hacky way to handle both structured and custom serialization errors, and
+	// struct with no public fields for which we need to call Error() to get a useful string.
+	if e, isError := v.(error); isError && str == "{}" {
+		return fmt.Sprintf("%q", e.Error())
 	}
-	sort.Strings(keys)
-	for i, k := range keys {
-		if i != 0 {
-			buf.WriteString(",")
-		}
-		buf.WriteString(fmt.Sprintf("%q", k))
-		buf.WriteString(":")
-		vv := ValueType[interface{}]{Val: s[k]}
-		buf.WriteString(vv.String())
-	}
-	buf.WriteString("}")
-	return buf.String()
+	return str
 }
 
 func (v ValueType[T]) String() string {
@@ -629,13 +608,12 @@ func (v ValueType[T]) String() string {
 	switch s := any(v.Val).(type) {
 	case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64,
 		float32, float64:
-		return fmt.Sprint(v.Val)
-	case []interface{}:
-		return arrayToString(s)
-	case map[string]interface{}:
-		return mapToString(s)
+		return fmt.Sprint(s)
+	case string:
+		return fmt.Sprintf("%q", s)
+	/* It's all handled by json fallback now even though slightly more expensive at runtime, it's a lot simpler */
 	default:
-		return fmt.Sprintf("%q", fmt.Sprint(v.Val))
+		return toJSON(v.Val) // was fmt.Sprintf("%q", fmt.Sprint(v.Val))
 	}
 }
 

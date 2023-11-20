@@ -752,6 +752,52 @@ func TestNoLevel(t *testing.T) {
 	}
 }
 
+type customError struct {
+	Msg  string
+	Code int
+}
+
+func (e customError) Error() string {
+	return fmt.Sprintf("custom error %s (code %d)", e.Msg, e.Code)
+}
+
+func TestSerializationOfError(t *testing.T) {
+	var err error
+	kv := Any("err", err)
+	kvStr := kv.StringValue()
+	expected := `null`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+	err = fmt.Errorf("test error")
+	Errf("Error on purpose: %v", err)
+	S(Error, "Error on purpose", Any("err", err))
+	kv = Any("err", err)
+	kvStr = kv.StringValue()
+	expected = `"test error"`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+	err = customError{Msg: "custom error", Code: 42}
+	kv = Any("err", err)
+	kvStr = kv.StringValue()
+	expected = `{"Msg":"custom error","Code":42}`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+}
+
+func TestToJSON_MarshalError(t *testing.T) {
+	badValue := make(chan int)
+
+	expected := fmt.Sprintf("\"ERR marshaling %v: %v\"", badValue, "json: unsupported type: chan int")
+	actual := toJSON(badValue)
+
+	if actual != expected {
+		t.Errorf("Expected %q, got %q", expected, actual)
+	}
+}
+
 // io.Discard but specially known to by logger optimizations for instance.
 type discard struct{}
 
