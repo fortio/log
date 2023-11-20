@@ -592,7 +592,7 @@ type ValueType[T ValueTypes] struct {
 func toJSON(v any) string {
 	bytes, err := json.Marshal(v)
 	if err != nil {
-		return fmt.Sprintf("ERR marshaling %v: %v", v, err)
+		return strconv.Quote(fmt.Sprintf("ERR marshaling %v: %v", v, err))
 	}
 	str := string(bytes)
 	// This is kinda hacky way to handle both structured and custom serialization errors, and

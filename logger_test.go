@@ -787,6 +787,17 @@ func TestSerializationOfError(t *testing.T) {
 	}
 }
 
+func TestToJSON_MarshalError(t *testing.T) {
+	badValue := make(chan int)
+
+	expected := fmt.Sprintf("\"ERR marshaling %v: %v\"", badValue, "json: unsupported type: chan int")
+	actual := toJSON(badValue)
+
+	if actual != expected {
+		t.Errorf("Expected %q, got %q", expected, actual)
+	}
+}
+
 // io.Discard but specially known to by logger optimizations for instance.
 type discard struct{}
 
