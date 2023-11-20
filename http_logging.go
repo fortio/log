@@ -20,6 +20,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // TLSInfo returns ' https <cipher suite> "<peer CN>"' if the request is using TLS
@@ -51,7 +52,7 @@ func AppendTLSInfoAttrs(attrs []KeyVal, r *http.Request) []KeyVal {
 // including headers when loglevel is verbose.
 // additional key:value pairs can be passed as extraAttributes.
 //
-//nolint:revive
+//nolint:revive // name is fine.
 func LogRequest(r *http.Request, msg string, extraAttributes ...KeyVal) {
 	if !Log(Info) {
 		return
@@ -72,6 +73,72 @@ func LogRequest(r *http.Request, msg string, extraAttributes ...KeyVal) {
 		}
 	}
 	S(Info, msg, attr...)
+}
+
+// LogResponse logs the response code, byte size and duration of the request.
+// additional key:value pairs can be passed as extraAttributes.
+//
+//nolint:revive // name is fine.
+func LogResponse[T *ResponseRecorder | *http.Response](r T, msg string, extraAttributes ...KeyVal) {
+	if !Log(Info) {
+		return
+	}
+	var attr []KeyVal
+	switch v := any(r).(type) {
+	case *ResponseRecorder:
+		attr = []KeyVal{
+			Int("status", v.StatusCode),
+			Int64("size", v.ContentLength),
+		}
+	case *http.Response:
+		attr = []KeyVal{
+			Int("status", v.StatusCode),
+			Int64("size", v.ContentLength),
+		}
+	}
+	attr = append(attr, extraAttributes...)
+	S(Info, msg, attr...)
+}
+
+// Can be used (and is used by LogAndCall()) to wrap a http.ResponseWriter to record status code and size.
+type ResponseRecorder struct {
+	w             http.ResponseWriter
+	startTime     time.Time
+	StatusCode    int
+	ContentLength int64
+}
+
+func (rr *ResponseRecorder) Header() http.Header {
+	return rr.w.Header()
+}
+
+func (rr *ResponseRecorder) Write(p []byte) (int, error) {
+	size, err := rr.w.Write(p)
+	rr.ContentLength += int64(size)
+	if err != nil {
+		rr.StatusCode = http.StatusInternalServerError
+	} else if rr.StatusCode == 0 {
+		rr.StatusCode = http.StatusOK
+	}
+	return size, err
+}
+
+func (rr *ResponseRecorder) WriteHeader(code int) {
+	rr.w.WriteHeader(code)
+	rr.StatusCode = code
+}
+
+// LogResponse logs the response code, byte size and duration of the request.
+// additional key:value pairs can be passed as extraAttributes.
+//
+//nolint:revive // name is fine.
+func LogAndCall(msg string, hf http.HandlerFunc, extraAttributes ...KeyVal) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		LogRequest(r, msg, extraAttributes...)
+		rr := &ResponseRecorder{w: w, startTime: time.Now()}
+		hf(rr, r)
+		LogResponse(rr, msg, Int64("microsec", time.Since(rr.startTime).Microseconds()))
+	})
 }
 
 type logWriter struct {
