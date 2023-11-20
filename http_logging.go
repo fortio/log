@@ -83,18 +83,19 @@ func LogResponse[T *ResponseRecorder | *http.Response](r T, msg string, extraAtt
 	if !Log(Info) {
 		return
 	}
-	var attr []KeyVal
-	switch v := any(r).(type) {
+	var status int
+	var size int64
+	switch v := any(r).(type) { // go generics...
 	case *ResponseRecorder:
-		attr = []KeyVal{
-			Int("status", v.StatusCode),
-			Int64("size", v.ContentLength),
-		}
+		status = v.StatusCode
+		size = v.ContentLength
 	case *http.Response:
-		attr = []KeyVal{
-			Int("status", v.StatusCode),
-			Int64("size", v.ContentLength),
-		}
+		status = v.StatusCode
+		size = v.ContentLength
+	}
+	attr := []KeyVal{
+		Int("status", status),
+		Int64("size", size),
 	}
 	attr = append(attr, extraAttributes...)
 	S(Info, msg, attr...)
