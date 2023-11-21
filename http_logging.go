@@ -88,7 +88,7 @@ func LogRequest(r *http.Request, msg string, extraAttributes ...KeyVal) {
 		// Host is removed from headers map and put separately
 		// Need to sort to get a consistent order
 		keys := make([]string, 0, len(r.Header))
-		for name, _ := range r.Header {
+		for name := range r.Header {
 			keys = append(keys, strings.ToLower(name))
 		}
 		sort.Strings(keys)
@@ -153,7 +153,7 @@ func (rr *ResponseRecorder) WriteHeader(code int) {
 	rr.StatusCode = code
 }
 
-// Implement http.Flusher interface
+// Implement http.Flusher interface.
 func (rr *ResponseRecorder) Flush() {
 	if f, ok := rr.w.(http.Flusher); ok {
 		f.Flush()

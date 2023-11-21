@@ -69,7 +69,7 @@ func (n *NullHTTPWriter) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-// Also implement http.Flusher interface
+// Also implement http.Flusher interface.
 func (n *NullHTTPWriter) Flush() {
 }
 
