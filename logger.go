@@ -57,8 +57,8 @@ const (
 	Critical
 	Fatal
 	NoLevel
-	// Prefix for all config from environment, eg
-	// e.g NoTimestamp becomes LOGGER_NO_TIMESTAMP
+	// Prefix for all config from environment,
+	// e.g NoTimestamp becomes LOGGER_NO_TIMESTAMP.
 	EnvPrefix = "LOGGER_"
 )
 
