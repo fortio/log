@@ -24,7 +24,7 @@ func TestLogRequest(t *testing.T) {
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
 	SetOutput(w)
-	h := http.Header{"FoO": []string{"bar1", "bar2"}, "X-Forwarded-Host": []string{"foo.fortio.org"}}
+	h := http.Header{"FoO": []string{"bar1", "bar2"}, "X-Forwarded-Host": []string{"fOO.fortio.org"}}
 	cert := &x509.Certificate{Subject: pkix.Name{CommonName: "x\nyz"}} // make sure special chars are escaped
 	r := &http.Request{TLS: &tls.ConnectionState{PeerCertificates: []*x509.Certificate{cert}}, Header: h, Host: "foo-host:123"}
 	LogRequest(r, "test1")
@@ -34,7 +34,7 @@ func TestLogRequest(t *testing.T) {
 	w.Flush()
 	actual := b.String()
 	//nolint: lll
-	expected := `{"level":"info","msg":"test1","method":"","url":null,"host":"foo-host:123","proto":"","remote_addr":"","tls":true,"tls.peer_cn":"x\nyz","header.FoO":"bar1,bar2","header.X-Forwarded-Host":"foo.fortio.org"}
+	expected := `{"level":"info","msg":"test1","method":"","url":null,"host":"foo-host:123","proto":"","remote_addr":"","tls":true,"tls.peer_cn":"x\nyz","header.foo":"bar1,bar2","header.x-forwarded-host":"fOO.fortio.org"}
 {"level":"info","msg":"test2","method":"","url":null,"host":"foo-host:123","proto":"","remote_addr":"","extra1":"v1","extra2":"v2"}
 `
 	if actual != expected {

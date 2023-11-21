@@ -94,7 +94,11 @@ func LogRequest(r *http.Request, msg string, extraAttributes ...KeyVal) {
 		}
 		sort.Strings(keys)
 		for _, name := range keys {
-			attr = append(attr, Str("header."+name, strings.Join(r.Header[name], ",")))
+			nl := strings.ToLower(name)
+			if nl != "user-agent" {
+				nl = "header." + nl
+			}
+			attr = append(attr, Str(nl, strings.Join(r.Header[name], ",")))
 		}
 	}
 	S(Info, msg, attr...)
