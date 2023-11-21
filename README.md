@@ -79,9 +79,9 @@ The `log.Colors` can be used by callers and they'll be empty string when not in 
 
 `LogAndCall()` combines `LogRequest` and `LogResponse` for a light middleware recording what happens during serving of a request (both incoming and outgoing attributes).
 
-For instance (most attributes elided for brievety, also logs client cert and TLSInfo if applicable)
+For instance (most attributes elided for brevity, also logs client cert and TLSInfo if applicable)
 ```json
-{"level":"info","msg":"test-log-and-call2","method":"GET","url":{"Path":"/tea"},"status":418,"size":5,"microsec":100042}
+{"level":"info","msg":"test-log-and-call2","method":"GET","url":"/tea","status":418,"size":5,"microsec":100042}
 ```
 
 # Config
