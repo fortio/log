@@ -75,9 +75,10 @@ func LogRequest(r *http.Request, msg string, extraAttributes ...KeyVal) {
 	attr := []KeyVal{
 		Str("method", r.Method), url, Str("host", r.Host),
 		Str("proto", r.Proto), Str("remote_addr", r.RemoteAddr),
-		Str("user-agent", r.Header.Get("User-Agent")),
 	}
 	if !LogVerbose() { // in verbose all headers are already logged
+		attr = AddIfNotEmpty(attr, "user-agent", r.Header.Get("User-Agent"))
+		// note this only prints the first one, while verbose mode will join all values with ','
 		attr = AddIfNotEmpty(attr, "header.x-forwarded-proto", r.Header.Get("X-Forwarded-Proto"))
 		attr = AddIfNotEmpty(attr, "header.x-forwarded-for", r.Header.Get("X-Forwarded-For"))
 		attr = AddIfNotEmpty(attr, "header.x-forwarded-host", r.Header.Get("X-Forwarded-Host"))
@@ -89,7 +90,7 @@ func LogRequest(r *http.Request, msg string, extraAttributes ...KeyVal) {
 		// Need to sort to get a consistent order
 		keys := make([]string, 0, len(r.Header))
 		for name := range r.Header {
-			keys = append(keys, strings.ToLower(name))
+			keys = append(keys, name)
 		}
 		sort.Strings(keys)
 		for _, name := range keys {

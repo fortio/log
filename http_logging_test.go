@@ -24,7 +24,7 @@ func TestLogRequest(t *testing.T) {
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
 	SetOutput(w)
-	h := http.Header{"foo": []string{"bar1", "bar2"}, "X-Forwarded-Host": []string{"foo.fortio.org"}}
+	h := http.Header{"FoO": []string{"bar1", "bar2"}, "X-Forwarded-Host": []string{"foo.fortio.org"}}
 	cert := &x509.Certificate{Subject: pkix.Name{CommonName: "x\nyz"}} // make sure special chars are escaped
 	r := &http.Request{TLS: &tls.ConnectionState{PeerCertificates: []*x509.Certificate{cert}}, Header: h, Host: "foo-host:123"}
 	LogRequest(r, "test1")
@@ -34,8 +34,8 @@ func TestLogRequest(t *testing.T) {
 	w.Flush()
 	actual := b.String()
 	//nolint: lll
-	expected := `{"level":"info","msg":"test1","method":"","url":null,"host":"foo-host:123","proto":"","remote_addr":"","user-agent":"","tls":true,"tls.peer_cn":"x\nyz","header.foo":"bar1,bar2","header.x-forwarded-host":""}
-{"level":"info","msg":"test2","method":"","url":null,"host":"foo-host:123","proto":"","remote_addr":"","user-agent":"","extra1":"v1","extra2":"v2"}
+	expected := `{"level":"info","msg":"test1","method":"","url":null,"host":"foo-host:123","proto":"","remote_addr":"","tls":true,"tls.peer_cn":"x\nyz","header.FoO":"bar1,bar2","header.X-Forwarded-Host":"foo.fortio.org"}
+{"level":"info","msg":"test2","method":"","url":null,"host":"foo-host:123","proto":"","remote_addr":"","extra1":"v1","extra2":"v2"}
 `
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
@@ -92,7 +92,7 @@ func TestLogAndCall(t *testing.T) {
 	w.Flush()
 	actual := b.String()
 	//nolint: lll
-	expectedPrefix := `{"level":"info","msg":"test-log-and-call","method":"","url":null,"host":"","proto":"","remote_addr":"","user-agent":"","header.x-forwarded-host":"foo2.fortio.org"}
+	expectedPrefix := `{"level":"info","msg":"test-log-and-call","method":"","url":null,"host":"","proto":"","remote_addr":"","header.x-forwarded-host":"foo2.fortio.org"}
 {"level":"info","msg":"test-log-and-call","status":200,"size":5,"microsec":1` // the 1 is for the 100ms sleep
 	if !strings.HasPrefix(actual, expectedPrefix) {
 		t.Errorf("unexpected:\n%s\nvs should start with:\n%s\n", actual, expectedPrefix)
@@ -107,7 +107,7 @@ func TestLogAndCall(t *testing.T) {
 	w.Flush()
 	actual = b.String()
 	//nolint: lll
-	expectedPrefix = `{"level":"info","msg":"test-log-and-call2","method":"","url":"/tea","host":"","proto":"","remote_addr":"","user-agent":"","header.x-forwarded-host":"foo2.fortio.org","status":418,"size":5,"microsec":10`
+	expectedPrefix = `{"level":"info","msg":"test-log-and-call2","method":"","url":"/tea","host":"","proto":"","remote_addr":"","header.x-forwarded-host":"foo2.fortio.org","status":418,"size":5,"microsec":10`
 	if !strings.HasPrefix(actual, expectedPrefix) {
 		t.Errorf("unexpected:\n%s\nvs should start with:\n%s\n", actual, expectedPrefix)
 	}
@@ -116,7 +116,7 @@ func TestLogAndCall(t *testing.T) {
 	LogAndCall("test-log-and-call3", testHandler).ServeHTTP(hw, hr)
 	w.Flush()
 	actual = b.String()
-	expectedFragment := `"user-agent":"","header.x-forwarded-host":"foo2.fortio.org","status":500,"size":0,"microsec":1`
+	expectedFragment := `"header.x-forwarded-host":"foo2.fortio.org","status":500,"size":0,"microsec":1`
 	if !strings.Contains(actual, expectedFragment) {
 		t.Errorf("unexpected:\n%s\nvs should contain error:\n%s\n", actual, expectedFragment)
 	}
