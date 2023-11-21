@@ -127,6 +127,8 @@ func TestLogAndCall(t *testing.T) {
 	if !strings.Contains(actual, `{"level":"crit","msg":"panic in handler","error":"some fake http write panic"`) {
 		t.Errorf("unexpected:\n%s\nvs should contain error:\n%s\n", actual, "some fake http write panic")
 	}
+	// restore for other tests
+	Config.GoroutineID = true
 }
 
 func TestLogResponseOnHTTPResponse(t *testing.T) {
