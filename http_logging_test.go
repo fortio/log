@@ -75,7 +75,7 @@ func TestLogAndCall(t *testing.T) {
 	Config.LogFileAndLine = false
 	Config.JSON = true
 	Config.NoTimestamp = true
-	Config.CombineRequestAndResponse = false // single line test
+	Config.CombineRequestAndResponse = false // Separate request and response logging
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
 	SetOutput(w)
@@ -96,7 +96,7 @@ func TestLogAndCall(t *testing.T) {
 	}
 	hr.URL = &url.URL{Path: "/tea"}
 	b.Reset()
-	Config.CombineRequestAndResponse = true // single line test
+	Config.CombineRequestAndResponse = true // Combined logging test
 	LogAndCall("test-log-and-call2", testHandler).ServeHTTP(hw, hr)
 	w.Flush()
 	actual = b.String()

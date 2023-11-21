@@ -129,11 +129,14 @@ func (rr *ResponseRecorder) WriteHeader(code int) {
 	rr.StatusCode = code
 }
 
-// LogResponse logs the response code, byte size and duration of the request.
-// additional key:value pairs can be passed as extraAttributes.
+// LogAndCall logs the incoming request and the response code, byte size and duration
+// of the request.
+//
 // If Config.CombineRequestAndResponse or the LOGGER_COMBINE_REQUEST_AND_RESPONSE
 // environment variable is true. then a single log entry is done combining request and
-// response information, including catching for panic
+// response information, including catching for panic.
+//
+// Additional key:value pairs can be passed as extraAttributes.
 //
 //nolint:revive // name is fine.
 func LogAndCall(msg string, hf http.HandlerFunc, extraAttributes ...KeyVal) http.HandlerFunc {

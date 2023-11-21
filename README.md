@@ -75,6 +75,15 @@ JSON formatted logs can also be converted back to text later/after capture and s
 
 The `log.Colors` can be used by callers and they'll be empty string when not in color mode, and the ansi escape codes otherwise.
 
+# HTTP request/response logging
+
+`LogAndCall()` combines `LogRequest` and `LogResponse` for a light middleware recording what happens during serving of a request (both incoming and outgoing attributes).
+
+For instance (most attributes elided for brievety, also logs client cert and TLSInfo if applicable)
+```json
+{"level":"info","msg":"test-log-and-call2","method":"GET","url":{"Path":"/tea"},"status":418,"size":5,"microsec":100042}
+```
+
 # Config
 
 You can either use `fortio.org/cli` or `fortio.org/scli` (or `dflags`) for configuration using flags (or dynamic flags and config map) or use the environment variables:
