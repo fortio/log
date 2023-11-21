@@ -135,6 +135,23 @@ func (rr *ResponseRecorder) WriteHeader(code int) {
 //nolint:revive // name is fine.
 func LogAndCall(msg string, hf http.HandlerFunc, extraAttributes ...KeyVal) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if Config.CombineRequestAndResponse {
+			rr := &ResponseRecorder{w: w, startTime: time.Now()}
+			defer func() {
+				if err := recover(); err != nil {
+					S(Critical, "panic in handler", Any("error", err))
+				}
+				attr := []KeyVal{
+					Int("status", rr.StatusCode),
+					Int64("size", rr.ContentLength),
+					Int64("microsec", time.Since(rr.startTime).Microseconds()),
+				}
+				attr = append(attr, extraAttributes...)
+				LogRequest(r, msg, attr...)
+			}()
+			hf(rr, r)
+			return
+		}
 		LogRequest(r, msg, extraAttributes...)
 		rr := &ResponseRecorder{w: w, startTime: time.Now()}
 		hf(rr, r)

@@ -46,17 +46,23 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL != nil && r.URL.Path == "/tea" {
 		w.WriteHeader(http.StatusTeapot)
 	}
-	time.Sleep(100 * time.Millisecond)
 	w.Write([]byte("hello"))
+	time.Sleep(100 * time.Millisecond)
 }
 
-type NullHTTPWriter struct{ doErr bool }
+type NullHTTPWriter struct {
+	doErr   bool
+	doPanic bool
+}
 
 func (n *NullHTTPWriter) Header() http.Header {
 	return nil
 }
 
 func (n *NullHTTPWriter) Write(b []byte) (int, error) {
+	if n.doPanic {
+		panic("some fake http write panic")
+	}
 	if n.doErr {
 		return 0, fmt.Errorf("some fake http write error")
 	}
@@ -89,20 +95,37 @@ func TestLogAndCall(t *testing.T) {
 	}
 	hr.URL = &url.URL{Path: "/tea"}
 	b.Reset()
+	Config.CombineRequestAndResponse = true // single line test
 	LogAndCall("test-log-and-call2", testHandler).ServeHTTP(hw, hr)
 	w.Flush()
 	actual = b.String()
-	if !strings.Contains(actual, ":418,") {
-		t.Errorf("unexpected:\n%s\nvs should contain tea pot code.", actual)
+	//nolint: lll
+	expectedPrefix = `{"level":"info","msg":"test-log-and-call2","method":"","url":{"Scheme":"","Opaque":"","User":null,"Host":"","Path":"/tea","RawPath":"","OmitHost":false,"ForceQuery":false,"RawQuery":"","Fragment":"","RawFragment":""},"proto":"","remote_addr":"","host":"","header.x-forwarded-proto":"","header.x-forwarded-for":"","user-agent":"","status":418,"size":5,"microsec":1`
+	if !strings.HasPrefix(actual, expectedPrefix) {
+		t.Errorf("unexpected:\n%s\nvs should start with:\n%s\n", actual, expectedPrefix)
 	}
 	b.Reset()
 	n.doErr = true
 	LogAndCall("test-log-and-call3", testHandler).ServeHTTP(hw, hr)
 	w.Flush()
 	actual = b.String()
-	expectedFragment := `"test-log-and-call3","status":500,"size":0,"microsec":`
+	expectedFragment := `"user-agent":"","status":500,"size":0,"microsec":1`
 	if !strings.Contains(actual, expectedFragment) {
 		t.Errorf("unexpected:\n%s\nvs should contain error:\n%s\n", actual, expectedFragment)
+	}
+	n.doPanic = true
+	n.doErr = false
+	b.Reset()
+	LogAndCall("test-log-and-call4", testHandler).ServeHTTP(hw, hr)
+	w.Flush()
+	actual = b.String()
+	expectedFragment = `,"size":0,`
+	Config.GoroutineID = false
+	if !strings.Contains(actual, expectedFragment) {
+		t.Errorf("unexpected:\n%s\nvs should contain error:\n%s\n", actual, expectedFragment)
+	}
+	if !strings.Contains(actual, `{"level":"crit","msg":"panic in handler","error":"some fake http write panic"`) {
+		t.Errorf("unexpected:\n%s\nvs should contain error:\n%s\n", actual, "some fake http write panic")
 	}
 }
 
