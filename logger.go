@@ -40,6 +40,7 @@ import (
 	"time"
 
 	"fortio.org/log/goroutine"
+	"fortio.org/struct2env"
 )
 
 // Level is the level of logging (0 Debug -> 6 Fatal).
@@ -56,6 +57,9 @@ const (
 	Critical
 	Fatal
 	NoLevel
+	// Prefix for all config from environment, eg
+	// e.g NoTimestamp becomes LOGGER_NO_TIMESTAMP
+	EnvPrefix = "LOGGER_"
 )
 
 //nolint:revive // we keep "Config" for the variable itself.
@@ -63,7 +67,7 @@ type LogConfig struct {
 	LogPrefix      string    // "Prefix to log lines before logged messages
 	LogFileAndLine bool      // Logs filename and line number of callers to log.
 	FatalPanics    bool      // If true, log.Fatalf will panic (stack trace) instead of just exit 1
-	FatalExit      func(int) // Function to call upon log.Fatalf. e.g. os.Exit.
+	FatalExit      func(int) `env:"-"` // Function to call upon log.Fatalf. e.g. os.Exit.
 	JSON           bool      // If true, log in structured JSON format instead of text (but see ConsoleColor).
 	NoTimestamp    bool      // If true, don't log timestamp in json.
 	ConsoleColor   bool      // If true and we detect console output (not redirected), use text+color mode.
@@ -72,6 +76,10 @@ type LogConfig struct {
 	ForceColor bool
 	// If true, log the goroutine ID (gid) in json.
 	GoroutineID bool
+	// If true, single combined log for LogAndCall
+	CombineRequestAndResponse bool
+	// String version of the log level, used for setting from environment.
+	Level string
 }
 
 // DefaultConfig() returns the default initial configuration for the logger, best suited
@@ -180,6 +188,18 @@ func init() {
 	log.SetFlags(log.Ltime)
 	SetColorMode()
 	jWriter.buf.Grow(2048)
+	prev := Config.Level
+	struct2env.SetFromEnv(EnvPrefix, Config)
+	if Config.Level != "" && Config.Level != prev {
+		lvl, err := ValidateLevel(Config.Level)
+		if err != nil {
+			Errf("Invalid log level from environment %q: %v", Config.Level, err)
+			return
+		}
+		SetLogLevelQuiet(lvl)
+		Infof("Log level set from environment %s%s to %s", EnvPrefix, "LEVEL", lvl.String())
+	}
+	Config.Level = GetLogLevel().String()
 }
 
 func setLevel(lvl Level) {
@@ -283,8 +303,18 @@ func setLogLevel(lvl Level, logChange bool) Level {
 			logUnconditionalf(Config.LogFileAndLine, Info, "Log level is now %d %s (was %d %s)", lvl, lvl.String(), prev, prev.String())
 		}
 		setLevel(lvl)
+		Config.Level = lvl.String()
 	}
 	return prev
+}
+
+func EnvHelp(w io.Writer) {
+	res, err := struct2env.StructToEnvVars(Config)
+	if err != nil {
+		Errf("Error converting config to env: %v", err)
+	}
+	str := struct2env.ToShellWithPrefix(EnvPrefix, res, true)
+	fmt.Fprint(w, str)
 }
 
 // GetLogLevel returns the currently configured LogLevel.

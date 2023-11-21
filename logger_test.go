@@ -798,6 +798,31 @@ func TestToJSON_MarshalError(t *testing.T) {
 	}
 }
 
+func TestEnvHelp(t *testing.T) {
+	SetDefaultsForClientTools()
+	Config.NoTimestamp = false
+	// Setup
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	EnvHelp(w)
+	w.Flush()
+	actual := b.String()
+	expected := `LOGGER_LOG_PREFIX=' '
+LOGGER_LOG_FILE_AND_LINE=false
+LOGGER_FATAL_PANICS=false
+LOGGER_JSON=false
+LOGGER_NO_TIMESTAMP=false
+LOGGER_CONSOLE_COLOR=true
+LOGGER_FORCE_COLOR=false
+LOGGER_GOROUTINE_ID=false
+LOGGER_COMBINE_REQUEST_AND_RESPONSE=false
+LOGGER_LEVEL='Info'
+`
+	if actual != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
+	}
+}
+
 // io.Discard but specially known to by logger optimizations for instance.
 type discard struct{}
 
