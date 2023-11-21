@@ -101,7 +101,7 @@ func TestLogAndCall(t *testing.T) {
 	w.Flush()
 	actual = b.String()
 	//nolint: lll
-	expectedPrefix = `{"level":"info","msg":"test-log-and-call2","method":"","url":{"Scheme":"","Opaque":"","User":null,"Host":"","Path":"/tea","RawPath":"","OmitHost":false,"ForceQuery":false,"RawQuery":"","Fragment":"","RawFragment":""},"proto":"","remote_addr":"","host":"","header.x-forwarded-proto":"","header.x-forwarded-for":"","user-agent":"","status":418,"size":5,"microsec":1`
+	expectedPrefix = `{"level":"info","msg":"test-log-and-call2","method":"","url":"/tea","proto":"","remote_addr":"","host":"","header.x-forwarded-proto":"","header.x-forwarded-for":"","user-agent":"","status":418,"size":5,"microsec":1`
 	if !strings.HasPrefix(actual, expectedPrefix) {
 		t.Errorf("unexpected:\n%s\nvs should start with:\n%s\n", actual, expectedPrefix)
 	}

@@ -57,8 +57,15 @@ func LogRequest(r *http.Request, msg string, extraAttributes ...KeyVal) {
 	if !Log(Info) {
 		return
 	}
+	// URL struct is quite verbose and not that interesting to log all pieces so we log the String() version
+	var url KeyVal
+	if r.URL == nil {
+		url = Any("url", r.URL) // basically 'null'
+	} else {
+		url = Str("url", r.URL.String())
+	}
 	attr := []KeyVal{
-		Str("method", r.Method), Attr("url", r.URL), Str("proto", r.Proto),
+		Str("method", r.Method), url, Str("proto", r.Proto),
 		Str("remote_addr", r.RemoteAddr), Str("host", r.Host),
 		Str("header.x-forwarded-proto", r.Header.Get("X-Forwarded-Proto")),
 		Str("header.x-forwarded-for", r.Header.Get("X-Forwarded-For")),
