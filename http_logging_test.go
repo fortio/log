@@ -69,6 +69,10 @@ func (n *NullHTTPWriter) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
+// Also implement http.Flusher interface
+func (n *NullHTTPWriter) Flush() {
+}
+
 func (n *NullHTTPWriter) WriteHeader(_ int) {}
 
 func TestLogAndCall(t *testing.T) {
@@ -130,6 +134,13 @@ func TestLogAndCall(t *testing.T) {
 	}
 	// restore for other tests
 	Config.GoroutineID = true
+	// check for flusher interface
+	var hwi http.ResponseWriter = hw
+	flusher, ok := hwi.(http.Flusher)
+	if !ok {
+		t.Fatalf("expected http.ResponseWriter to be an http.Flusher")
+	}
+	flusher.Flush()
 }
 
 func TestLogResponseOnHTTPResponse(t *testing.T) {

@@ -136,6 +136,13 @@ func (rr *ResponseRecorder) WriteHeader(code int) {
 	rr.StatusCode = code
 }
 
+// Implement http.Flusher interface
+func (rr *ResponseRecorder) Flush() {
+	if f, ok := rr.w.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
 // LogAndCall logs the incoming request and the response code, byte size and duration
 // of the request.
 //
