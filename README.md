@@ -74,3 +74,20 @@ When on console:
 JSON formatted logs can also be converted back to text later/after capture and similarly colorized using [fortio.org/logc](https://github.com/fortio/logc#logc)
 
 The `log.Colors` can be used by callers and they'll be empty string when not in color mode, and the ansi escape codes otherwise.
+
+# Config
+
+You can either use `fortio.org/cli` or `fortio.org/scli` (or `dflags`) for configuration using flags (or dynamic flags and config map) or use the environment variables:
+
+```
+LOGGER_LOG_PREFIX=' '
+LOGGER_LOG_FILE_AND_LINE=false
+LOGGER_FATAL_PANICS=false
+LOGGER_JSON=false
+LOGGER_NO_TIMESTAMP=false
+LOGGER_CONSOLE_COLOR=true
+LOGGER_FORCE_COLOR=false
+LOGGER_GOROUTINE_ID=false
+LOGGER_COMBINE_REQUEST_AND_RESPONSE=false
+LOGGER_LEVEL='Info'
+```

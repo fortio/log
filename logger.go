@@ -308,6 +308,12 @@ func setLogLevel(lvl Level, logChange bool) Level {
 	return prev
 }
 
+// EnvHelp shows the current config as environment variables.
+//
+// LOGGER_LOG_PREFIX, LOGGER_LOG_FILE_AND_LINE, LOGGER_FATAL_PANICS,
+// LOGGER_JSON, LOGGER_NO_TIMESTAMP, LOGGER_CONSOLE_COLOR, LOGGER_CONSOLE_COLOR
+// LOGGER_FORCE_COLOR, LOGGER_GOROUTINE_ID, LOGGER_COMBINE_REQUEST_AND_RESPONSE,
+// LOGGER_LEVEL.
 func EnvHelp(w io.Writer) {
 	res, err := struct2env.StructToEnvVars(Config)
 	if err != nil {
