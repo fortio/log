@@ -69,6 +69,7 @@ func LogRequest(r *http.Request, msg string, extraAttributes ...KeyVal) {
 		Str("remote_addr", r.RemoteAddr), Str("host", r.Host),
 		Str("header.x-forwarded-proto", r.Header.Get("X-Forwarded-Proto")),
 		Str("header.x-forwarded-for", r.Header.Get("X-Forwarded-For")),
+		Str("header.x-forwarded-host", r.Header.Get("X-Forwarded-Host")),
 		Str("user-agent", r.Header.Get("User-Agent")),
 	}
 	attr = AppendTLSInfoAttrs(attr, r)
