@@ -133,35 +133,36 @@ func (rr *ResponseRecorder) WriteHeader(code int) {
 // of the request.
 //
 // If Config.CombineRequestAndResponse or the LOGGER_COMBINE_REQUEST_AND_RESPONSE
-// environment variable is true. then a single log entry is done combining request and
+// environment variable is true, then a single log entry is done combining request and
 // response information, including catching for panic.
 //
 // Additional key:value pairs can be passed as extraAttributes.
 //
 //nolint:revive // name is fine.
-func LogAndCall(msg string, hf http.HandlerFunc, extraAttributes ...KeyVal) http.HandlerFunc {
+func LogAndCall(msg string, handlerFunc http.HandlerFunc, extraAttributes ...KeyVal) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// This is really 2 functions but we want to be able to change config without rewiring the middleware
 		if Config.CombineRequestAndResponse {
-			rr := &ResponseRecorder{w: w, startTime: time.Now()}
+			respRec := &ResponseRecorder{w: w, startTime: time.Now()}
 			defer func() {
 				if err := recover(); err != nil {
 					S(Critical, "panic in handler", Any("error", err))
 				}
 				attr := []KeyVal{
-					Int("status", rr.StatusCode),
-					Int64("size", rr.ContentLength),
-					Int64("microsec", time.Since(rr.startTime).Microseconds()),
+					Int("status", respRec.StatusCode),
+					Int64("size", respRec.ContentLength),
+					Int64("microsec", time.Since(respRec.startTime).Microseconds()),
 				}
 				attr = append(attr, extraAttributes...)
 				LogRequest(r, msg, attr...)
 			}()
-			hf(rr, r)
+			handlerFunc(respRec, r)
 			return
 		}
 		LogRequest(r, msg, extraAttributes...)
-		rr := &ResponseRecorder{w: w, startTime: time.Now()}
-		hf(rr, r)
-		LogResponse(rr, msg, Int64("microsec", time.Since(rr.startTime).Microseconds()))
+		respRec := &ResponseRecorder{w: w, startTime: time.Now()}
+		handlerFunc(respRec, r)
+		LogResponse(respRec, msg, Int64("microsec", time.Since(respRec.startTime).Microseconds()))
 	})
 }
 
