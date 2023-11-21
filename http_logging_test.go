@@ -50,20 +50,20 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("hello"))
 }
 
-type NullHttpWriter struct{ doErr bool }
+type NullHTTPWriter struct{ doErr bool }
 
-func (n *NullHttpWriter) Header() http.Header {
+func (n *NullHTTPWriter) Header() http.Header {
 	return nil
 }
 
-func (n *NullHttpWriter) Write(b []byte) (int, error) {
+func (n *NullHTTPWriter) Write(b []byte) (int, error) {
 	if n.doErr {
 		return 0, fmt.Errorf("some fake http write error")
 	}
 	return len(b), nil
 }
 
-func (n *NullHttpWriter) WriteHeader(_ int) {}
+func (n *NullHTTPWriter) WriteHeader(_ int) {}
 
 func TestLogAndCall(t *testing.T) {
 	Config.LogFileAndLine = false
@@ -73,7 +73,7 @@ func TestLogAndCall(t *testing.T) {
 	w := bufio.NewWriter(&b)
 	SetOutput(w)
 	hr := &http.Request{}
-	n := &NullHttpWriter{}
+	n := &NullHTTPWriter{}
 	hw := &ResponseRecorder{w: n}
 	LogAndCall("test-log-and-call", testHandler).ServeHTTP(hw, hr)
 	w.Flush()
