@@ -88,7 +88,7 @@ For instance (most attributes elided for brievety, also logs client cert and TLS
 
 You can either use `fortio.org/cli` or `fortio.org/scli` (or `dflags`) for configuration using flags (or dynamic flags and config map) or use the environment variables:
 
-```
+```bash
 LOGGER_LOG_PREFIX=' '
 LOGGER_LOG_FILE_AND_LINE=false
 LOGGER_FATAL_PANICS=false
@@ -97,6 +97,6 @@ LOGGER_NO_TIMESTAMP=false
 LOGGER_CONSOLE_COLOR=true
 LOGGER_FORCE_COLOR=false
 LOGGER_GOROUTINE_ID=false
-LOGGER_COMBINE_REQUEST_AND_RESPONSE=false
+LOGGER_COMBINE_REQUEST_AND_RESPONSE=true
 LOGGER_LEVEL='Info'
 ```
