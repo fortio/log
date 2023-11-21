@@ -75,6 +75,7 @@ func TestLogAndCall(t *testing.T) {
 	Config.LogFileAndLine = false
 	Config.JSON = true
 	Config.NoTimestamp = true
+	Config.CombineRequestAndResponse = false // single line test
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
 	SetOutput(w)

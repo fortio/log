@@ -89,13 +89,14 @@ type LogConfig struct {
 // Use SetDefaultsForClientTools for CLIs.
 func DefaultConfig() *LogConfig {
 	return &LogConfig{
-		LogPrefix:      "> ",
-		LogFileAndLine: true,
-		FatalPanics:    true,
-		FatalExit:      os.Exit,
-		JSON:           true,
-		ConsoleColor:   true,
-		GoroutineID:    true,
+		LogPrefix:                 "> ",
+		LogFileAndLine:            true,
+		FatalPanics:               true,
+		FatalExit:                 os.Exit,
+		JSON:                      true,
+		ConsoleColor:              true,
+		GoroutineID:               true,
+		CombineRequestAndResponse: true,
 	}
 }
 
@@ -142,6 +143,7 @@ func SetDefaultsForClientTools() {
 	Config.ConsoleColor = true
 	Config.JSON = false
 	Config.GoroutineID = false
+	Config.CombineRequestAndResponse = false
 	SetColorMode()
 }
 
