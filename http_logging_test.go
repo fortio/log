@@ -6,9 +6,13 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"fmt"
 	"log"
 	"net/http"
+	"net/url"
+	"strings"
 	"testing"
+	"time"
 )
 
 // There is additional functional testing in fortio.org/fortio/fhttp.
@@ -36,6 +40,98 @@ func TestLogRequest(t *testing.T) {
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
 	}
+}
+
+func testHandler(w http.ResponseWriter, r *http.Request) {
+	if r.URL != nil && r.URL.Path == "/tea" {
+		w.WriteHeader(http.StatusTeapot)
+	}
+	time.Sleep(100 * time.Millisecond)
+	w.Write([]byte("hello"))
+}
+
+type NullHttpWriter struct{ doErr bool }
+
+func (n *NullHttpWriter) Header() http.Header {
+	return nil
+}
+
+func (n *NullHttpWriter) Write(b []byte) (int, error) {
+	if n.doErr {
+		return 0, fmt.Errorf("some fake http write error")
+	}
+	return len(b), nil
+}
+
+func (n *NullHttpWriter) WriteHeader(_ int) {}
+
+func TestLogAndCall(t *testing.T) {
+	Config.LogFileAndLine = false
+	Config.JSON = true
+	Config.NoTimestamp = true
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	SetOutput(w)
+	hr := &http.Request{}
+	n := &NullHttpWriter{}
+	hw := &ResponseRecorder{w: n}
+	LogAndCall("test-log-and-call", testHandler).ServeHTTP(hw, hr)
+	w.Flush()
+	actual := b.String()
+	//nolint: lll
+	expectedPrefix := `{"level":"info","msg":"test-log-and-call","method":"","url":null,"proto":"","remote_addr":"","host":"","header.x-forwarded-proto":"","header.x-forwarded-for":"","user-agent":""}
+{"level":"info","msg":"test-log-and-call","status":200,"size":5,"microsec":1` // the 1 is for the 100ms sleep
+	if !strings.HasPrefix(actual, expectedPrefix) {
+		t.Errorf("unexpected:\n%s\nvs should start with:\n%s\n", actual, expectedPrefix)
+	}
+	if hw.Header() != nil {
+		t.Errorf("unexpected non nil header: %v", hw.Header())
+	}
+	hr.URL = &url.URL{Path: "/tea"}
+	b.Reset()
+	LogAndCall("test-log-and-call2", testHandler).ServeHTTP(hw, hr)
+	w.Flush()
+	actual = b.String()
+	if !strings.Contains(actual, ":418,") {
+		t.Errorf("unexpected:\n%s\nvs should contain tea pot code.", actual)
+	}
+	b.Reset()
+	n.doErr = true
+	LogAndCall("test-log-and-call3", testHandler).ServeHTTP(hw, hr)
+	w.Flush()
+	actual = b.String()
+	expectedFragment := `"test-log-and-call3","status":500,"size":0,"microsec":`
+	if !strings.Contains(actual, expectedFragment) {
+		t.Errorf("unexpected:\n%s\nvs should contain error:\n%s\n", actual, expectedFragment)
+	}
+}
+
+func TestLogResponseOnHTTPResponse(t *testing.T) {
+	SetLogLevel(Info)
+	Config.LogFileAndLine = false
+	Config.JSON = true
+	Config.NoTimestamp = true
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	SetOutput(w)
+	r := &http.Response{StatusCode: http.StatusTeapot, ContentLength: 123}
+	LogResponse(r, "test1")
+	w.Flush()
+	actual := b.String()
+	expected := `{"level":"info","msg":"test1","status":418,"size":123}
+`
+	if actual != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
+	}
+	SetLogLevelQuiet(Warning)
+	b.Reset()
+	LogResponse(r, "test2")
+	w.Flush()
+	actual = b.String()
+	if actual != "" {
+		t.Errorf("unexpected: %q", actual)
+	}
+	SetLogLevelQuiet(Verbose)
 }
 
 func TestLogRequestNoLog(t *testing.T) {
