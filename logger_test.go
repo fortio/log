@@ -824,7 +824,7 @@ LOGGER_LEVEL='Info'
 }
 
 func TestConfigFromEnvError(t *testing.T) {
-	os.Setenv("LOGGER_LEVEL", "foo")
+	t.Setenv("LOGGER_LEVEL", "foo")
 	var buf bytes.Buffer
 	SetOutput(&buf)
 	configFromEnv()
@@ -836,7 +836,7 @@ func TestConfigFromEnvError(t *testing.T) {
 }
 
 func TestConfigFromEnvOk(t *testing.T) {
-	os.Setenv("LOGGER_LEVEL", "verbose")
+	t.Setenv("LOGGER_LEVEL", "verbose")
 	var buf bytes.Buffer
 	SetOutput(&buf)
 	configFromEnv()
