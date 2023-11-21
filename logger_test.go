@@ -823,6 +823,30 @@ LOGGER_LEVEL='Info'
 	}
 }
 
+func TestConfigFromEnvError(t *testing.T) {
+	os.Setenv("LOGGER_LEVEL", "foo")
+	var buf bytes.Buffer
+	SetOutput(&buf)
+	configFromEnv()
+	actual := buf.String()
+	expected := "Invalid log level from environment"
+	if !strings.Contains(actual, expected) {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
+	}
+}
+
+func TestConfigFromEnvOk(t *testing.T) {
+	os.Setenv("LOGGER_LEVEL", "verbose")
+	var buf bytes.Buffer
+	SetOutput(&buf)
+	configFromEnv()
+	actual := buf.String()
+	expected := "Log level set from environment LOGGER_LEVEL to Verbose"
+	if !strings.Contains(actual, expected) {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
+	}
+}
+
 // io.Discard but specially known to by logger optimizations for instance.
 type discard struct{}
 

@@ -188,8 +188,12 @@ func init() {
 		JSONStringLevelToLevel[name[1:len(name)-1]] = Level(l)
 	}
 	log.SetFlags(log.Ltime)
+	configFromEnv()
 	SetColorMode()
 	jWriter.buf.Grow(2048)
+}
+
+func configFromEnv() {
 	prev := Config.Level
 	struct2env.SetFromEnv(EnvPrefix, Config)
 	if Config.Level != "" && Config.Level != prev {
@@ -317,10 +321,7 @@ func setLogLevel(lvl Level, logChange bool) Level {
 // LOGGER_FORCE_COLOR, LOGGER_GOROUTINE_ID, LOGGER_COMBINE_REQUEST_AND_RESPONSE,
 // LOGGER_LEVEL.
 func EnvHelp(w io.Writer) {
-	res, err := struct2env.StructToEnvVars(Config)
-	if err != nil {
-		Errf("Error converting config to env: %v", err)
-	}
+	res, _ := struct2env.StructToEnvVars(Config)
 	str := struct2env.ToShellWithPrefix(EnvPrefix, res, true)
 	fmt.Fprint(w, str)
 }
