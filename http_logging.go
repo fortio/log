@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 )
@@ -48,6 +49,13 @@ func AppendTLSInfoAttrs(attrs []KeyVal, r *http.Request) []KeyVal {
 	return attrs
 }
 
+func AddIfNotEmpty(attrs []KeyVal, key, value string) []KeyVal {
+	if value != "" {
+		attrs = append(attrs, Str(key, value))
+	}
+	return attrs
+}
+
 // LogRequest logs the incoming request, TLSInfo,
 // including headers when loglevel is verbose.
 // additional key:value pairs can be passed as extraAttributes.
@@ -65,19 +73,27 @@ func LogRequest(r *http.Request, msg string, extraAttributes ...KeyVal) {
 		url = Str("url", r.URL.String())
 	}
 	attr := []KeyVal{
-		Str("method", r.Method), url, Str("proto", r.Proto),
-		Str("remote_addr", r.RemoteAddr), Str("host", r.Host),
-		Str("header.x-forwarded-proto", r.Header.Get("X-Forwarded-Proto")),
-		Str("header.x-forwarded-for", r.Header.Get("X-Forwarded-For")),
-		Str("header.x-forwarded-host", r.Header.Get("X-Forwarded-Host")),
+		Str("method", r.Method), url, Str("host", r.Host),
+		Str("proto", r.Proto), Str("remote_addr", r.RemoteAddr),
 		Str("user-agent", r.Header.Get("User-Agent")),
+	}
+	if !LogVerbose() { // in verbose all headers are already logged
+		attr = AddIfNotEmpty(attr, "header.x-forwarded-proto", r.Header.Get("X-Forwarded-Proto"))
+		attr = AddIfNotEmpty(attr, "header.x-forwarded-for", r.Header.Get("X-Forwarded-For"))
+		attr = AddIfNotEmpty(attr, "header.x-forwarded-host", r.Header.Get("X-Forwarded-Host"))
 	}
 	attr = AppendTLSInfoAttrs(attr, r)
 	attr = append(attr, extraAttributes...)
 	if LogVerbose() {
 		// Host is removed from headers map and put separately
-		for name, headers := range r.Header {
-			attr = append(attr, Str("header."+name, strings.Join(headers, ",")))
+		// Need to sort to get a consistent order
+		keys := make([]string, 0, len(r.Header))
+		for name, _ := range r.Header {
+			keys = append(keys, strings.ToLower(name))
+		}
+		sort.Strings(keys)
+		for _, name := range keys {
+			attr = append(attr, Str("header."+name, strings.Join(r.Header[name], ",")))
 		}
 	}
 	S(Info, msg, attr...)
