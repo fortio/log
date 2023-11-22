@@ -52,6 +52,7 @@ linters-settings:
         allow:
           - $gostd
           - fortio.org/log
+          - fortio.org/struct2env
   lll:
     # max line length, lines longer will be reported. Default is 120.
     # '\t' is counted as 1 character by default, and can be changed with the tab-width option

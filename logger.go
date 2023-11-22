@@ -40,6 +40,7 @@ import (
 	"time"
 
 	"fortio.org/log/goroutine"
+	"fortio.org/struct2env"
 )
 
 // Level is the level of logging (0 Debug -> 6 Fatal).
@@ -56,6 +57,9 @@ const (
 	Critical
 	Fatal
 	NoLevel
+	// Prefix for all config from environment,
+	// e.g NoTimestamp becomes LOGGER_NO_TIMESTAMP.
+	EnvPrefix = "LOGGER_"
 )
 
 //nolint:revive // we keep "Config" for the variable itself.
@@ -63,7 +67,7 @@ type LogConfig struct {
 	LogPrefix      string    // "Prefix to log lines before logged messages
 	LogFileAndLine bool      // Logs filename and line number of callers to log.
 	FatalPanics    bool      // If true, log.Fatalf will panic (stack trace) instead of just exit 1
-	FatalExit      func(int) // Function to call upon log.Fatalf. e.g. os.Exit.
+	FatalExit      func(int) `env:"-"` // Function to call upon log.Fatalf. e.g. os.Exit.
 	JSON           bool      // If true, log in structured JSON format instead of text (but see ConsoleColor).
 	NoTimestamp    bool      // If true, don't log timestamp in json.
 	ConsoleColor   bool      // If true and we detect console output (not redirected), use text+color mode.
@@ -72,6 +76,10 @@ type LogConfig struct {
 	ForceColor bool
 	// If true, log the goroutine ID (gid) in json.
 	GoroutineID bool
+	// If true, single combined log for LogAndCall
+	CombineRequestAndResponse bool
+	// String version of the log level, used for setting from environment.
+	Level string
 }
 
 // DefaultConfig() returns the default initial configuration for the logger, best suited
@@ -81,13 +89,14 @@ type LogConfig struct {
 // Use SetDefaultsForClientTools for CLIs.
 func DefaultConfig() *LogConfig {
 	return &LogConfig{
-		LogPrefix:      "> ",
-		LogFileAndLine: true,
-		FatalPanics:    true,
-		FatalExit:      os.Exit,
-		JSON:           true,
-		ConsoleColor:   true,
-		GoroutineID:    true,
+		LogPrefix:                 "> ",
+		LogFileAndLine:            true,
+		FatalPanics:               true,
+		FatalExit:                 os.Exit,
+		JSON:                      true,
+		ConsoleColor:              true,
+		GoroutineID:               true,
+		CombineRequestAndResponse: true,
 	}
 }
 
@@ -134,6 +143,7 @@ func SetDefaultsForClientTools() {
 	Config.ConsoleColor = true
 	Config.JSON = false
 	Config.GoroutineID = false
+	Config.CombineRequestAndResponse = false
 	SetColorMode()
 }
 
@@ -178,8 +188,24 @@ func init() {
 		JSONStringLevelToLevel[name[1:len(name)-1]] = Level(l)
 	}
 	log.SetFlags(log.Ltime)
+	configFromEnv()
 	SetColorMode()
 	jWriter.buf.Grow(2048)
+}
+
+func configFromEnv() {
+	prev := Config.Level
+	struct2env.SetFromEnv(EnvPrefix, Config)
+	if Config.Level != "" && Config.Level != prev {
+		lvl, err := ValidateLevel(Config.Level)
+		if err != nil {
+			Errf("Invalid log level from environment %q: %v", Config.Level, err)
+			return
+		}
+		SetLogLevelQuiet(lvl)
+		Infof("Log level set from environment %s%s to %s", EnvPrefix, "LEVEL", lvl.String())
+	}
+	Config.Level = GetLogLevel().String()
 }
 
 func setLevel(lvl Level) {
@@ -283,8 +309,22 @@ func setLogLevel(lvl Level, logChange bool) Level {
 			logUnconditionalf(Config.LogFileAndLine, Info, "Log level is now %d %s (was %d %s)", lvl, lvl.String(), prev, prev.String())
 		}
 		setLevel(lvl)
+		Config.Level = lvl.String()
 	}
 	return prev
+}
+
+// EnvHelp shows the current config as environment variables.
+//
+// LOGGER_LOG_PREFIX, LOGGER_LOG_FILE_AND_LINE, LOGGER_FATAL_PANICS,
+// LOGGER_JSON, LOGGER_NO_TIMESTAMP, LOGGER_CONSOLE_COLOR, LOGGER_CONSOLE_COLOR
+// LOGGER_FORCE_COLOR, LOGGER_GOROUTINE_ID, LOGGER_COMBINE_REQUEST_AND_RESPONSE,
+// LOGGER_LEVEL.
+func EnvHelp(w io.Writer) {
+	res, _ := struct2env.StructToEnvVars(Config)
+	str := struct2env.ToShellWithPrefix(EnvPrefix, res, true)
+	fmt.Fprintln(w, "# Logger environment variables:")
+	fmt.Fprint(w, str)
 }
 
 // GetLogLevel returns the currently configured LogLevel.
