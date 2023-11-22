@@ -323,6 +323,7 @@ func setLogLevel(lvl Level, logChange bool) Level {
 func EnvHelp(w io.Writer) {
 	res, _ := struct2env.StructToEnvVars(Config)
 	str := struct2env.ToShellWithPrefix(EnvPrefix, res, true)
+	fmt.Fprintln(w, "# Logger environment variables:")
 	fmt.Fprint(w, str)
 }
 

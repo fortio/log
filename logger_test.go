@@ -807,7 +807,8 @@ func TestEnvHelp(t *testing.T) {
 	EnvHelp(w)
 	w.Flush()
 	actual := b.String()
-	expected := `LOGGER_LOG_PREFIX=' '
+	expected := `# Logger environment variables:
+LOGGER_LOG_PREFIX=' '
 LOGGER_LOG_FILE_AND_LINE=false
 LOGGER_FATAL_PANICS=false
 LOGGER_JSON=false
