@@ -76,7 +76,7 @@ func (n *NullHTTPWriter) Flush() {
 func (n *NullHTTPWriter) WriteHeader(_ int) {}
 
 func TestLogAndCall(t *testing.T) {
-	Config.LogFileAndLine = false
+	Config.LogFileAndLine = true // yet won't show up in output
 	Config.JSON = true
 	Config.NoTimestamp = true
 	Config.CombineRequestAndResponse = false // Separate request and response logging
@@ -122,6 +122,7 @@ func TestLogAndCall(t *testing.T) {
 	}
 	n.doPanic = true
 	n.doErr = false
+	SetLogLevelQuiet(Verbose)
 	b.Reset()
 	LogAndCall("test-log-and-call4", testHandler).ServeHTTP(hw, hr)
 	w.Flush()

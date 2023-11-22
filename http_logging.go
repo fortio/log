@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"runtime/debug"
 	"sort"
 	"strings"
 	"time"
@@ -101,7 +102,8 @@ func LogRequest(r *http.Request, msg string, extraAttributes ...KeyVal) {
 			attr = append(attr, Str(nl, strings.Join(r.Header[name], ",")))
 		}
 	}
-	S(Info, msg, attr...)
+	// not point in having the line number be this file
+	s(Info, false, Config.JSON, msg, attr...)
 }
 
 // LogResponse logs the response code, byte size and duration of the request.
@@ -127,7 +129,8 @@ func LogResponse[T *ResponseRecorder | *http.Response](r T, msg string, extraAtt
 		Int64("size", size),
 	}
 	attr = append(attr, extraAttributes...)
-	S(Info, msg, attr...)
+	// not point in having the line number be this file
+	s(Info, false, Config.JSON, msg, attr...)
 }
 
 // Can be used (and is used by LogAndCall()) to wrap a http.ResponseWriter to record status code and size.
@@ -182,7 +185,10 @@ func LogAndCall(msg string, handlerFunc http.HandlerFunc, extraAttributes ...Key
 			respRec := &ResponseRecorder{w: w, startTime: time.Now()}
 			defer func() {
 				if err := recover(); err != nil {
-					S(Critical, "panic in handler", Any("error", err))
+					s(Critical, false, Config.JSON, "panic in handler", Any("error", err))
+					if Log(Verbose) {
+						s(Verbose, false, Config.JSON, "stack trace", Str("stack", string(debug.Stack())))
+					}
 				}
 				attr := []KeyVal{
 					Int("status", respRec.StatusCode),
