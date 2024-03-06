@@ -620,7 +620,7 @@ func TestLoggerFatalCliMode(t *testing.T) {
 func TestLoggerFatalExitOverride(t *testing.T) {
 	SetDefaultsForClientTools()
 	exitCalled := false
-	Config.FatalExit = func(code int) {
+	Config.FatalExit = func(_ int) {
 		exitCalled = true
 	}
 	Fatalf("testing log.Fatalf exit case")
@@ -769,7 +769,7 @@ func TestSerializationOfError(t *testing.T) {
 	if kvStr != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
 	}
-	err = fmt.Errorf("test error")
+	err = errors.New("test error")
 	Errf("Error on purpose: %v", err)
 	S(Error, "Error on purpose", Any("err", err))
 	kv = Any("err", err)
