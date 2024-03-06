@@ -6,7 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"fmt"
+	"errors"
 	"log"
 	"net/http"
 	"net/url"
@@ -64,7 +64,7 @@ func (n *NullHTTPWriter) Write(b []byte) (int, error) {
 		panic("some fake http write panic")
 	}
 	if n.doErr {
-		return 0, fmt.Errorf("some fake http write error")
+		return 0, errors.New("some fake http write error")
 	}
 	return len(b), nil
 }
