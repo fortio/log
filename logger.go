@@ -442,31 +442,33 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 	if logFileAndLine { //nolint:nestif
 		_, file, line, _ := runtime.Caller(3)
 		file = file[strings.LastIndex(file, "/")+1:]
-		if Color {
+		switch {
+		case Color:
 			jsonWrite(fmt.Sprintf("%s%s%s %s:%d%s%s%s%s\n",
 				colorTimestamp(), colorGID(), ColorLevelToStr(lvl),
 				file, line, prefix, LevelToColor[lvl], fmt.Sprintf(format, rest...), Colors.Reset))
-		} else if Config.JSON {
+		case Config.JSON:
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,%s\"file\":%q,\"line\":%d,\"msg\":%q}\n",
 				jsonTimestamp(), LevelToJSON[lvl], jsonGID(), file, line, fmt.Sprintf(format, rest...)))
-		} else {
+		default:
 			if lvl != NoLevel {
 				lvl1Char = "[" + LevelToStrA[lvl][0:1] + "]"
 			}
 			log.Print(lvl1Char, " ", file, ":", line, prefix, fmt.Sprintf(format, rest...))
 		}
 	} else {
-		if Color {
+		switch {
+		case Color:
 			jsonWrite(fmt.Sprintf("%s%s%s%s%s%s%s\n",
 				colorTimestamp(), colorGID(), ColorLevelToStr(lvl), prefix, LevelToColor[lvl],
 				fmt.Sprintf(format, rest...), Colors.Reset))
-		} else if Config.JSON {
+		case Config.JSON:
 			if len(rest) != 0 {
 				format = fmt.Sprintf(format, rest...)
 			}
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,%s\"msg\":%q}\n",
 				jsonTimestamp(), LevelToJSON[lvl], jsonGID(), format))
-		} else {
+		default:
 			if lvl != NoLevel {
 				lvl1Char = "[" + LevelToStrA[lvl][0:1] + "]"
 			}
@@ -684,11 +686,12 @@ func s(lvl Level, logFileAndLine bool, json bool, msg string, attrs ...KeyVal) {
 	}
 	buf := strings.Builder{}
 	var format string
-	if Color {
+	switch {
+	case Color:
 		format = Colors.Reset + ", " + Colors.Blue + "%s" + Colors.Reset + "=" + LevelToColor[lvl] + "%v"
-	} else if json {
+	case json:
 		format = ",%q:%s"
-	} else {
+	default:
 		format = ", %s=%s"
 	}
 	for _, attr := range attrs {
@@ -705,27 +708,29 @@ func s(lvl Level, logFileAndLine bool, json bool, msg string, attrs ...KeyVal) {
 	} else {
 		lvl1Char = "[" + LevelToStrA[lvl][0:1] + "]"
 	}
-	if logFileAndLine { //nolint:nestif
+	if logFileAndLine {
 		_, file, line, _ := runtime.Caller(2)
 		file = file[strings.LastIndex(file, "/")+1:]
-		if Color {
+		switch {
+		case Color:
 			jsonWrite(fmt.Sprintf("%s%s%s %s:%d%s%s%s%s%s\n",
 				colorTimestamp(), colorGID(), ColorLevelToStr(lvl),
 				file, line, prefix, LevelToColor[lvl], msg, buf.String(), Colors.Reset))
-		} else if json {
+		case json:
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,%s\"file\":%q,\"line\":%d,\"msg\":%q%s}\n",
 				jsonTimestamp(), LevelToJSON[lvl], jsonGID(), file, line, msg, buf.String()))
-		} else {
+		default:
 			log.Print(lvl1Char, " ", file, ":", line, prefix, msg, buf.String())
 		}
 	} else {
-		if Color {
+		switch {
+		case Color:
 			jsonWrite(fmt.Sprintf("%s%s%s%s%s%s%s%s\n",
 				colorTimestamp(), colorGID(), ColorLevelToStr(lvl), prefix, LevelToColor[lvl], msg, buf.String(), Colors.Reset))
-		} else if json {
+		case json:
 			jsonWrite(fmt.Sprintf("{%s\"level\":%s,\"msg\":%q%s}\n",
 				jsonTimestamp(), LevelToJSON[lvl], msg, buf.String()))
-		} else {
+		default:
 			log.Print(lvl1Char, prefix, msg, buf.String())
 		}
 	}
