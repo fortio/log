@@ -757,8 +757,14 @@ type customError struct {
 	Code int
 }
 
+type customErrorAlias customError
+
 func (e customError) Error() string {
 	return fmt.Sprintf("custom error %s (code %d)", e.Msg, e.Code)
+}
+
+func (e customError) MarshalJSON() ([]byte, error) {
+	return json.Marshal(customErrorAlias(e))
 }
 
 func TestSerializationOfError(t *testing.T) {

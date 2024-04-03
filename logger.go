@@ -637,11 +637,8 @@ func toJSON(v any) string {
 		return strconv.Quote(fmt.Sprintf("ERR marshaling %v: %v", v, err))
 	}
 	str := string(bytes)
-	// This is kinda hacky way to handle both structured and custom serialization errors, and
-	// struct with no public fields for which we need to call Error() to get a useful string.
-	if e, isError := v.(error); isError && str == "{}" {
-		return fmt.Sprintf("%q", e.Error())
-	}
+	// We now handle errors before calling toJSON: if there is a marshaller we use it
+	// otherwise we use the string from .Error()
 	return str
 }
 
