@@ -653,6 +653,19 @@ func (v ValueType[T]) String() string {
 		return fmt.Sprint(s)
 	case string:
 		return fmt.Sprintf("%q", s)
+	case error:
+		// Sadly structured errors like nettwork error don't have the reason in
+		// the exposed struct/JSON - ie on gets
+		// {"Op":"read","Net":"tcp","Source":{"IP":"127.0.0.1","Port":60067,"Zone":""},"Addr":{"IP":"127.0.0.1","Port":3000,"Zone":""},"Err":{}}
+		// instead of
+		// read tcp 127.0.0.1:60067->127.0.0.1:3000: i/o timeout
+		// Noticed in https://github.com/fortio/fortio/issues/913
+		_, hasMarshaller := s.(json.Marshaler)
+		if hasMarshaller {
+			return toJSON(v.Val)
+		} else {
+			return fmt.Sprintf("%q", s.Error())
+		}
 	/* It's all handled by json fallback now even though slightly more expensive at runtime, it's a lot simpler */
 	default:
 		return toJSON(v.Val) // was fmt.Sprintf("%q", fmt.Sprint(v.Val))
