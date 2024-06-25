@@ -5,7 +5,7 @@
 Fortio's log is simple logger built on top of go's default one with
 additional opinionated levels similar to glog but simpler to use and configure.
 
-It's been used for many years for Fortio's org Fortio project and more (under fortio.org/fortio/log package) but split out recently for standalone use, with the "flag polution" limited (as a library it doesn't include the flags, you configure it using apis).
+It's been used for many years for Fortio's org Fortio project and more (under fortio.org/fortio/log package) but split out recently for standalone use, with the "flag pollution" limited (as a library it doesn't include the flags, you configure it using apis).
 
 ```golang
 // On a cli tool (avoids file name and line numbers, stack traces on log.Fatalf etc)
