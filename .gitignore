@@ -2,3 +2,5 @@
 .golangci.yml
 fullsize
 smallsize
+coverage.out
+coverage?.out
