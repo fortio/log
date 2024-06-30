@@ -12,7 +12,8 @@ coverage:
 	go test -tags no_json -coverprofile=coverage3.out ./...
 	go test -tags no_http,no_json -coverprofile=coverage4.out ./...
 	# cat coverage*.out > coverage.out
-	# gocovmerge coverage?.out > coverage.out
+	go install github.com/wadey/gocovmerge@b5bfa59ec0adc420475f97f89b58045c721d761c
+	gocovmerge coverage?.out > coverage.out
 	# go tool cover -html=coverage.out
 
 example:
