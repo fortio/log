@@ -1,3 +1,5 @@
 coverage:
   ignore:
     - "levelsDemo"
+  files:
+    - "coverage*.out"
