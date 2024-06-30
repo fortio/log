@@ -11,7 +11,8 @@ coverage:
 	go test -tags no_net -coverprofile=coverage2.out ./...
 	go test -tags no_json -coverprofile=coverage3.out ./...
 	go test -tags no_http,no_json -coverprofile=coverage4.out ./...
-	gocovmerge coverage?.out > coverage.out
+	cat coverage*.out > coverage.out
+	# gocovmerge coverage?.out > coverage.out
 	# go tool cover -html=coverage.out
 
 example:
