@@ -27,6 +27,7 @@ size-check:
 	ls -lh ./smallsize
 	CGO_ENABLED=0 go build -tags no_http,no_json -ldflags="-w -s" -trimpath -o ./smallsize ./levelsDemo
 	ls -lh ./smallsize
+	gsa ./smallsize # go install github.com/Zxilly/go-size-analyzer/cmd/gsa@master
 
 
 lint: .golangci.yml

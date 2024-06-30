@@ -104,3 +104,7 @@ LOGGER_LEVEL='Info'
 # Small binaries
 
 If you're never logging http requests/responses, use `-tags no_http` (or `-tags no_net`) to exclude the http/https logging utilities.
+
+If you never need to JSON log complex structures/types that have a special `json.Marshaler` then you can use `-tags no_net,no_json` for the smallest executables
+
+(see `make size-check`)
