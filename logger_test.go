@@ -777,9 +777,16 @@ func TestPointers(t *testing.T) {
 	}
 	i := 42
 	iPtr = &i
-	kv = Any("err", iPtr)
+	kv = Any("int", iPtr)
 	kvStr = kv.StringValue()
 	expected = `42`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+	var sPtr *string
+	kv = Any("msg", sPtr)
+	kvStr = kv.StringValue()
+	expected = `null`
 	if kvStr != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
 	}

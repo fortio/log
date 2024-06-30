@@ -13,6 +13,7 @@
 // limitations under the License.
 
 // Moved json logging out so it can be skipped for smallest binaries based on build tags.
+// This file is the variant that does serialization manually instead of using json.Marshal.
 
 //go:build no_json
 
@@ -84,9 +85,9 @@ func (v ValueType[T]) String() string {
 	case map[string]interface{}:
 		return mapToString(s)
 	case error:
-		return fmt.Sprintf("%q", s.Error()) // no nil check needed/working for errors (interface)
+		return fmt.Sprintf("%q", s.Error()) // nil errors handled in case nil below
 	case nil:
-		return nullString
+		return nullString // nil interface{} like `var err error` (but not nil *string etc.)
 	default:
 		val := reflect.ValueOf(s)
 		k := val.Kind()
