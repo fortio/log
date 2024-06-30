@@ -100,3 +100,7 @@ LOGGER_GOROUTINE_ID=false
 LOGGER_COMBINE_REQUEST_AND_RESPONSE=true
 LOGGER_LEVEL='Info'
 ```
+
+# Small binaries
+
+If you're never logging http requests/responses, use `-tags no_http` (or `-tags no_net`) to exclude the http/https logging utilities.

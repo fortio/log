@@ -2,7 +2,9 @@
 all: test example
 
 test:
-	go test . -race ./...
+	go test -race ./...
+	go test -tags no_json ./...
+	go test -tags no_http ./...
 
 example:
 	@echo "### Colorized (default) ###"
@@ -16,6 +18,15 @@ line:
 # Suitable to make a screenshot with a bit of spaces around for updating color.png
 screenshot: line example
 	@echo
+
+size-check:
+	@echo "### Size of the binary:"
+	CGO_ENABLED=0 go build -ldflags="-w -s" -trimpath -o ./fullsize ./levelsDemo
+	ls -lh ./fullsize
+	CGO_ENABLED=0 go build -tags no_net -ldflags="-w -s" -trimpath -o ./smallsize ./levelsDemo
+	ls -lh ./smallsize
+	CGO_ENABLED=0 go build -tags no_http,no_json -ldflags="-w -s" -trimpath -o ./smallsize ./levelsDemo
+	ls -lh ./smallsize
 
 
 lint: .golangci.yml

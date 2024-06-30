@@ -25,7 +25,6 @@ package log // import "fortio.org/log"
 
 import (
 	"bytes"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -349,7 +348,7 @@ func Logf(lvl Level, format string, rest ...interface{}) {
 	logPrintf(lvl, format, rest...)
 }
 
-// Used when doing our own logging writing, in JSON/structured mode.
+// Used when doing our own logging writing, in JSON/structured mode (and some color variants as well, misnomer).
 var (
 	jWriter = jsonWriter{w: os.Stderr, tsBuf: make([]byte, 0, 32)}
 )
@@ -629,45 +628,6 @@ type ValueTypes interface{ any }
 
 type ValueType[T ValueTypes] struct {
 	Val T
-}
-
-func toJSON(v any) string {
-	bytes, err := json.Marshal(v)
-	if err != nil {
-		return strconv.Quote(fmt.Sprintf("ERR marshaling %v: %v", v, err))
-	}
-	str := string(bytes)
-	// We now handle errors before calling toJSON: if there is a marshaller we use it
-	// otherwise we use the string from .Error()
-	return str
-}
-
-func (v ValueType[T]) String() string {
-	// if the type is numeric, use Sprint(v.val) otherwise use Sprintf("%q", v.Val) to quote it.
-	switch s := any(v.Val).(type) {
-	case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64,
-		float32, float64:
-		return fmt.Sprint(s)
-	case string:
-		return fmt.Sprintf("%q", s)
-	case error:
-		// Sadly structured errors like nettwork error don't have the reason in
-		// the exposed struct/JSON - ie on gets
-		// {"Op":"read","Net":"tcp","Source":{"IP":"127.0.0.1","Port":60067,"Zone":""},
-		// "Addr":{"IP":"127.0.0.1","Port":3000,"Zone":""},"Err":{}}
-		// instead of
-		// read tcp 127.0.0.1:60067->127.0.0.1:3000: i/o timeout
-		// Noticed in https://github.com/fortio/fortio/issues/913
-		_, hasMarshaller := s.(json.Marshaler)
-		if hasMarshaller {
-			return toJSON(v.Val)
-		} else {
-			return fmt.Sprintf("%q", s.Error())
-		}
-	/* It's all handled by json fallback now even though slightly more expensive at runtime, it's a lot simpler */
-	default:
-		return toJSON(v.Val) // was fmt.Sprintf("%q", fmt.Sprint(v.Val))
-	}
 }
 
 // Our original name, now switched to slog style Any.
