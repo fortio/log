@@ -790,6 +790,33 @@ func TestPointers(t *testing.T) {
 	if kvStr != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
 	}
+	s := "test\nline2"
+	sPtr = &s
+	kv = Any("msg", sPtr)
+	kvStr = kv.StringValue()
+	expected = `"test\nline2"`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+}
+
+func TestStruct(t *testing.T) {
+	type testStruct struct {
+		Msg1 string
+		Msg2 *string
+	}
+	ptrStr := "test2"
+	ts := testStruct{Msg1: "test\nline2", Msg2: &ptrStr}
+	kv := Any("ts", ts)
+	kvStr := kv.StringValue()
+	expected := `{"Msg1":"test\nline2","Msg2":"test2"}`
+	if !fullJSON {
+		expected = `"{Msg1:test\nline2 Msg2:`
+		expected += fmt.Sprintf("%p}\"", &ptrStr)
+	}
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
 }
 
 func TestSerializationOfError(t *testing.T) {

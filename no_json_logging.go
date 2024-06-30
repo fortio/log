@@ -98,6 +98,6 @@ func (v ValueType[T]) String() string {
 			vv := ValueType[interface{}]{Val: val.Elem().Interface()}
 			return vv.String()
 		}
-		return fmt.Sprintf("%q", fmt.Sprint(v.Val))
+		return fmt.Sprintf("%q", fmt.Sprintf("%+v", v.Val))
 	}
 }

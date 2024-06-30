@@ -6,6 +6,10 @@ test:
 	go test -tags no_json ./...
 	go test -tags no_http ./...
 
+local-coverage: coverage
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out
+
 coverage:
 	go test -coverprofile=coverage1.out ./...
 	go test -tags no_net -coverprofile=coverage2.out ./...
@@ -14,7 +18,6 @@ coverage:
 	# cat coverage*.out > coverage.out
 	go install github.com/wadey/gocovmerge@b5bfa59ec0adc420475f97f89b58045c721d761c
 	gocovmerge coverage?.out > coverage.out
-	# go tool cover -html=coverage.out
 
 example:
 	@echo "### Colorized (default) ###"
