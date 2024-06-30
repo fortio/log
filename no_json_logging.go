@@ -85,12 +85,11 @@ func (v ValueType[T]) String() string {
 		return mapToString(s)
 	case error:
 		return fmt.Sprintf("%q", s.Error()) // no nil check needed/working for errors (interface)
+	case nil:
+		return nullString
 	default:
 		val := reflect.ValueOf(s)
 		k := val.Kind()
-		if k == reflect.Invalid { // any way to avoid this and still get `var err error` to return null?
-			return nullString
-		}
 		if k == reflect.Ptr || k == reflect.Interface {
 			if val.IsNil() {
 				return nullString
