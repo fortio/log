@@ -767,6 +767,24 @@ func (e customError) MarshalJSON() ([]byte, error) {
 	return json.Marshal(customErrorAlias(e))
 }
 
+func TestPointers(t *testing.T) {
+	var iPtr *int
+	kv := Any("err", iPtr)
+	kvStr := kv.StringValue()
+	expected := `null`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+	i := 42
+	iPtr = &i
+	kv = Any("err", iPtr)
+	kvStr = kv.StringValue()
+	expected = `42`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+}
+
 func TestSerializationOfError(t *testing.T) {
 	var err error
 	kv := Any("err", err)
@@ -788,6 +806,9 @@ func TestSerializationOfError(t *testing.T) {
 	kv = Any("err", err)
 	kvStr = kv.StringValue()
 	expected = `{"Msg":"custom error","Code":42}`
+	if !fullJSON {
+		expected = `"custom error custom error (code 42)"`
+	}
 	if kvStr != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
 	}

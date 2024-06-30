@@ -25,6 +25,8 @@ import (
 	"strconv"
 )
 
+var fullJSON = true
+
 func toJSON(v any) string {
 	bytes, err := json.Marshal(v)
 	if err != nil {

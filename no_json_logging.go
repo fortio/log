@@ -20,9 +20,12 @@ package log // import "fortio.org/log"
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 )
+
+var fullJSON = false
 
 // restore version "manual json serialization" from
 // https://github.com/fortio/log/pull/46/files#diff-ff87b7c4777a35588053a509583d66c9f404ccbea9e1c71d2a5f224d7ad1323e
@@ -61,6 +64,8 @@ func mapToString(s map[string]interface{}) string {
 	return buf.String()
 }
 
+const nullString = "null"
+
 func (v ValueType[T]) String() string {
 	// if the type is numeric, use Sprint(v.val) otherwise use Sprintf("%q", v.Val) to quote it.
 	switch s := any(v.Val).(type) {
@@ -69,14 +74,30 @@ func (v ValueType[T]) String() string {
 		return fmt.Sprint(s)
 	case string:
 		return fmt.Sprintf("%q", s)
+	case *string:
+		if s == nil {
+			return nullString
+		}
+		return fmt.Sprintf("%q", *s)
 	case []interface{}:
 		return arrayToString(s)
 	case map[string]interface{}:
 		return mapToString(s)
 	case error:
-		return fmt.Sprintf("%q", s.Error())
-
+		return fmt.Sprintf("%q", s.Error()) // no nil check needed/working for errors (interface)
 	default:
+		val := reflect.ValueOf(s)
+		k := val.Kind()
+		if k == reflect.Invalid { // any way to avoid this and still get `var err error` to return null?
+			return nullString
+		}
+		if k == reflect.Ptr || k == reflect.Interface {
+			if val.IsNil() {
+				return nullString
+			}
+			vv := ValueType[interface{}]{Val: val.Elem().Interface()}
+			return vv.String()
+		}
 		return fmt.Sprintf("%q", fmt.Sprint(v.Val))
 	}
 }
