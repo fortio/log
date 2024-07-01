@@ -767,6 +767,90 @@ func (e customError) MarshalJSON() ([]byte, error) {
 	return json.Marshal(customErrorAlias(e))
 }
 
+func TestPointers(t *testing.T) {
+	var iPtr *int
+	kv := Any("err", iPtr)
+	kvStr := kv.StringValue()
+	expected := `null`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+	i := 42
+	iPtr = &i
+	kv = Any("int", iPtr)
+	kvStr = kv.StringValue()
+	expected = `42`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+	var sPtr *string
+	kv = Any("msg", sPtr)
+	kvStr = kv.StringValue()
+	expected = `null`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+	s := "test\nline2"
+	sPtr = &s
+	kv = Any("msg", sPtr)
+	kvStr = kv.StringValue()
+	expected = `"test\nline2"`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+}
+
+func TestMoreTypes(t *testing.T) {
+	var b byte = 42
+	kv := Any("byte", b)
+	kvStr := kv.StringValue()
+	expected := `42`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+	runes := []rune(`A"Φ`) // test plain ascii, a double quote, and multibyte
+	r := runes[0]
+	kv = Rune("rune", r)
+	kvStr = kv.StringValue()
+	expected = `"A"`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+	r = runes[1]
+	kv = Rune("rune", r)
+	kvStr = kv.StringValue()
+	expected = `"\""`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+	r = runes[2]
+	kv = Rune("rune", r)
+	kvStr = kv.StringValue()
+	expected = `"Φ"`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+}
+
+func TestStruct(t *testing.T) {
+	type testStruct struct {
+		Msg1 string
+		Msg2 *string
+	}
+	ptrStr := "test2"
+	ts := testStruct{Msg1: "test\nline2", Msg2: &ptrStr}
+	kv := Any("ts", ts)
+	kvStr := kv.StringValue()
+	expected := `{"Msg1":"test\nline2","Msg2":"test2"}`
+	if !fullJSON {
+		expected = `"{Msg1:test\nline2 Msg2:`
+		expected += fmt.Sprintf("%p}\"", &ptrStr)
+	}
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+}
+
 func TestSerializationOfError(t *testing.T) {
 	var err error
 	kv := Any("err", err)
@@ -788,19 +872,11 @@ func TestSerializationOfError(t *testing.T) {
 	kv = Any("err", err)
 	kvStr = kv.StringValue()
 	expected = `{"Msg":"custom error","Code":42}`
+	if !fullJSON {
+		expected = `"custom error custom error (code 42)"`
+	}
 	if kvStr != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
-	}
-}
-
-func TestToJSON_MarshalError(t *testing.T) {
-	badValue := make(chan int)
-
-	expected := fmt.Sprintf("\"ERR marshaling %v: %v\"", badValue, "json: unsupported type: chan int")
-	actual := toJSON(badValue)
-
-	if actual != expected {
-		t.Errorf("Expected %q, got %q", expected, actual)
 	}
 }
 

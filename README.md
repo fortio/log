@@ -34,7 +34,7 @@ log.S(log.Info, "msg", log.Attr("key1", value1)...)
 
 See the `Config` object for options like whether to include line number and file name of caller or not etc
 
-New since 1.4 server logging (as used in [fortio.org/scli](https://pkg.go.dev/fortio.org/scli#ServerMain) for instance) is now structured (json), client logging (as setup by [fortio.org/cli](https://pkg.go.dev/fortio.org/scli#ServerMain) remains as before.
+New since 1.4 server logging (as used in [fortio.org/scli](https://pkg.go.dev/fortio.org/scli#ServerMain) for instance) is now structured (JSON), client logging (as setup by [fortio.org/cli](https://pkg.go.dev/fortio.org/scli#ServerMain) remains as before.
 
 One can also revert server to not be JSON through config.
 
@@ -46,7 +46,7 @@ Which can be converted to JSONEntry but is also a fixed, optimized format (ie ts
 
 The timestamp `ts` is in seconds.microseconds since epoch (golang UnixMicro() split into seconds part before decimal and microseconds after)
 
-Since 1.8 the Go Routine ID is present in json (`r` field) or colorized log output (for multi threaded server types).
+Since 1.8 the Go Routine ID is present in JSON (`r` field) or colorized log output (for multi threaded server types).
 
 Optional additional `KeyValue` pairs can be added to the base structure using the new `log.S` or passed to `log.LogRequest` using `log.Any` and `log.Str`. Note that numbers, as well as arrays of any type and maps of string keys to any type are supported (but more expensive to serialize recursively).
 
@@ -63,7 +63,7 @@ When output is redirected, JSON output:
 {"ts":1689986143.4634,"level":"err","r":1,"file":"levels.go","line":23,"msg":"This is an error message"}
 {"ts":1689986143.463403,"level":"crit","r":1,"file":"levels.go","line":24,"msg":"This is a critical message"}
 {"ts":1689986143.463406,"level":"fatal","r":1,"file":"levels.go","line":25,"msg":"This is a fatal message"}
-This is a non json output, will get prefixed with a exclamation point with logc
+This is a non-JSON output, will get prefixed with a exclamation point with logc
 ```
 
 When on console:
@@ -100,3 +100,11 @@ LOGGER_GOROUTINE_ID=false
 LOGGER_COMBINE_REQUEST_AND_RESPONSE=true
 LOGGER_LEVEL='Info'
 ```
+
+# Small binaries
+
+If you're never logging http requests/responses, use `-tags no_http` (or `-tags no_net`) to exclude the http/https logging utilities (which pulls in a lot of dependencies because of `net/http` init).
+
+If you never need to JSON log complex structures/types that have a special `json.Marshaler` then you can use `-tags no_net,no_json` for the smallest executables
+
+(see `make size-check`)
