@@ -618,7 +618,7 @@ func Bool(key string, value bool) KeyVal {
 
 func Rune(key string, value rune) KeyVal {
 	// Special case otherwise rune is printed as int32 number
-	return Any(key, fmt.Sprintf("%c", value))
+	return Any(key, string(value)) // similar to "%c".
 }
 
 func (v *KeyVal) StringValue() string {
