@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Moved json logging out so it can be skipped for smallest binaries based on build tags.
+// Moved JSON logging out so it can be skipped for smallest binaries based on build tags.
 // This file is the variant that does serialization manually instead of using json.Marshal.
 
 //go:build no_json
