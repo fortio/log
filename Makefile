@@ -1,31 +1,35 @@
 
-GOBIN:=go
+GO_BIN?=GOTOOLCHAIN=local go
 
-all: test example
+all: info test lint size-check coverage example
+
+info:
+	@echo "### Go (using GO_BIN=\"$(GO_BIN)\") version:"
+	$(GO_BIN) version
 
 test:
-	$(GOBIN) test -race ./...
-	$(GOBIN) test -tags no_json ./...
-	$(GOBIN) test -tags no_http ./...
+	$(GO_BIN) test -race ./...
+	$(GO_BIN) test -tags no_json ./...
+	$(GO_BIN) test -tags no_http ./...
 
 local-coverage: coverage
-	$(GOBIN) test -coverprofile=coverage.out ./...
-	$(GOBIN) tool cover -html=coverage.out
+	$(GO_BIN) test -coverprofile=coverage.out ./...
+	$(GO_BIN) tool cover -html=coverage.out
 
 coverage:
-	$(GOBIN) test -coverprofile=coverage1.out ./...
-	$(GOBIN) test -tags no_net -coverprofile=coverage2.out ./...
-	$(GOBIN) test -tags no_json -coverprofile=coverage3.out ./...
-	$(GOBIN) test -tags no_http,no_json -coverprofile=coverage4.out ./...
+	$(GO_BIN) test -coverprofile=coverage1.out ./...
+	$(GO_BIN) test -tags no_net -coverprofile=coverage2.out ./...
+	$(GO_BIN) test -tags no_json -coverprofile=coverage3.out ./...
+	$(GO_BIN) test -tags no_http,no_json -coverprofile=coverage4.out ./...
 	# cat coverage*.out > coverage.out
-	$(GOBIN) install github.com/wadey/gocovmerge@b5bfa59ec0adc420475f97f89b58045c721d761c
+	$(GO_BIN) install github.com/wadey/gocovmerge@b5bfa59ec0adc420475f97f89b58045c721d761c
 	gocovmerge coverage?.out > coverage.out
 
 example:
 	@echo "### Colorized (default) ###"
-	$(GOBIN) run ./levelsDemo
+	$(GO_BIN) run ./levelsDemo
 	@echo "### JSON: (redirected stderr) ###"
-	$(GOBIN) run ./levelsDemo 3>&1 1>&2 2>&3 | jq -c
+	$(GO_BIN) run ./levelsDemo 3>&1 1>&2 2>&3 | jq -c
 
 line:
 	@echo
@@ -36,13 +40,13 @@ screenshot: line example
 
 size-check:
 	@echo "### Size of the binary:"
-	CGO_ENABLED=0 $(GOBIN) build -ldflags="-w -s" -trimpath -o ./fullsize ./levelsDemo
+	CGO_ENABLED=0 $(GO_BIN) build -ldflags="-w -s" -trimpath -o ./fullsize ./levelsDemo
 	ls -lh ./fullsize
-	CGO_ENABLED=0 $(GOBIN) build -tags no_net -ldflags="-w -s" -trimpath -o ./smallsize ./levelsDemo
+	CGO_ENABLED=0 $(GO_BIN) build -tags no_net -ldflags="-w -s" -trimpath -o ./smallsize ./levelsDemo
 	ls -lh ./smallsize
-	CGO_ENABLED=0 $(GOBIN) build -tags no_http,no_json -ldflags="-w -s" -trimpath -o ./smallsize ./levelsDemo
+	CGO_ENABLED=0 $(GO_BIN) build -tags no_http,no_json -ldflags="-w -s" -trimpath -o ./smallsize ./levelsDemo
 	ls -lh ./smallsize
-	gsa ./smallsize # $(GOBIN) install github.com/Zxilly/$(GOBIN)-size-analyzer/cmd/gsa@master
+	gsa ./smallsize # $(GO_BIN) install github.com/Zxilly/$(GO_BIN)-size-analyzer/cmd/gsa@master
 
 
 lint: .golangci.yml
@@ -53,4 +57,4 @@ lint: .golangci.yml
 	curl -fsS -o .golangci.yml https://raw.githubusercontent.com/fortio/workflows/main/golangci.yml
 
 
-.PHONY: all test example screenshot line lint
+.PHONY: all info test lint size-check local-coverage example screenshot line coverage
