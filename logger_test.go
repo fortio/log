@@ -808,7 +808,7 @@ func TestMoreTypes(t *testing.T) {
 	if kvStr != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
 	}
-	runes := []rune("A\"Φ") // test plain ascii, quote, and multibyte
+	runes := []rune(`A"Φ`) // test plain ascii, a double quote, and multibyte
 	r := runes[0]
 	kv = Rune("rune", r)
 	kvStr = kv.StringValue()
