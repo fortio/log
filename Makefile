@@ -45,6 +45,7 @@ size-check:
 
 lint: .golangci.yml
 	golangci-lint run
+	golangci-lint run --build-tags no_json
 
 .golangci.yml: Makefile
 	curl -fsS -o .golangci.yml https://raw.githubusercontent.com/fortio/workflows/main/golangci.yml
