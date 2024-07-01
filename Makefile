@@ -1,5 +1,5 @@
 
-GOBIN:=$(GOBIN)
+GOBIN:=go
 
 all: test example
 
