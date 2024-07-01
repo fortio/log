@@ -63,7 +63,7 @@ When output is redirected, JSON output:
 {"ts":1689986143.4634,"level":"err","r":1,"file":"levels.go","line":23,"msg":"This is an error message"}
 {"ts":1689986143.463403,"level":"crit","r":1,"file":"levels.go","line":24,"msg":"This is a critical message"}
 {"ts":1689986143.463406,"level":"fatal","r":1,"file":"levels.go","line":25,"msg":"This is a fatal message"}
-This is a non JSON output, will get prefixed with a exclamation point with logc
+This is a non-JSON output, will get prefixed with a exclamation point with logc
 ```
 
 When on console:

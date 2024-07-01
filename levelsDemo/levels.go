@@ -14,7 +14,7 @@ func main() {
 	log.Config.GoroutineID = false
 	log.Debugf("This is a debug message without goroutine id, file:line nor prefix (cli style)")
 	log.Config = log.DefaultConfig()
-	// So log fatal doesn't panic nor exit (so we can print the non JSON last line).
+	// So log fatal doesn't panic nor exit (so we can print the non-JSON last line).
 	log.Config.FatalPanics = false
 	log.Config.FatalExit = func(int) {}
 	// Meat of the example: (some of these are reproducing fixed issues in `logc` JSON->console attributes detection)
@@ -28,5 +28,5 @@ func main() {
 	log.Errf("This is an error message")
 	log.Critf("This is a critical message")
 	log.Fatalf("This is a fatal message") //nolint:revive // we disabled exit for this demo
-	fmt.Println("This is a non JSON output, will get prefixed with a exclamation point with logc")
+	fmt.Println("This is a non-JSON output, will get prefixed with a exclamation point with logc")
 }
