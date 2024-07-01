@@ -616,6 +616,11 @@ func Bool(key string, value bool) KeyVal {
 	return Any(key, value)
 }
 
+func Rune(key string, value rune) KeyVal {
+	// Special case otherwise rune is printed as int32 number
+	return Any(key, fmt.Sprintf("%c", value))
+}
+
 func (v *KeyVal) StringValue() string {
 	if !v.Cached {
 		v.StrValue = v.Value.String()

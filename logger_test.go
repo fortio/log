@@ -800,6 +800,38 @@ func TestPointers(t *testing.T) {
 	}
 }
 
+func TestMoreTypes(t *testing.T) {
+	var b byte = 42
+	kv := Any("byte", b)
+	kvStr := kv.StringValue()
+	expected := `42`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+	runes := []rune("A\"Φ") // test plain ascii, quote, and multibyte
+	r := runes[0]
+	kv = Rune("rune", r)
+	kvStr = kv.StringValue()
+	expected = `"A"`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+	r = runes[1]
+	kv = Rune("rune", r)
+	kvStr = kv.StringValue()
+	expected = `"\""`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+	r = runes[2]
+	kv = Rune("rune", r)
+	kvStr = kv.StringValue()
+	expected = `"Φ"`
+	if kvStr != expected {
+		t.Errorf("unexpected:\n%s\nvs:\n%s\n", kvStr, expected)
+	}
+}
+
 func TestStruct(t *testing.T) {
 	type testStruct struct {
 		Msg1 string
