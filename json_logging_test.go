@@ -11,7 +11,7 @@ import (
 func TestToJSON_MarshalError(t *testing.T) {
 	badValue := make(chan int)
 
-	expected := fmt.Sprintf("\"ERR marshaling %v: %v\"", badValue, "JSON: unsupported type: chan int")
+	expected := fmt.Sprintf("\"ERR marshaling %v: %v\"", badValue, "json: unsupported type: chan int")
 	actual := toJSON(badValue)
 
 	if actual != expected {
