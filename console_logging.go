@@ -94,7 +94,10 @@ func ConsoleLogging() bool {
 	if !ok {
 		return false
 	}
-	s, _ := f.Stat()
+	s, err := f.Stat()
+	if err != nil {
+		return false
+	}
 	return (s.Mode() & os.ModeCharDevice) == os.ModeCharDevice
 }
 

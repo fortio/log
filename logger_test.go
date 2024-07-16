@@ -930,6 +930,17 @@ func TestConfigFromEnvOk(t *testing.T) {
 	}
 }
 
+func TestInvalidFile(t *testing.T) {
+	prev := jWriter.w
+	invalidFile := os.NewFile(^uintptr(0), "invalid-file")
+	jWriter.w = invalidFile
+	b := ConsoleLogging()
+	jWriter.w = prev
+	if b {
+		t.Errorf("expected not to be console logging")
+	}
+}
+
 // io.Discard but specially known to by logger optimizations for instance.
 type discard struct{}
 
