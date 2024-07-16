@@ -174,6 +174,9 @@ func (l *JSONEntry) Time() time.Time {
 
 //nolint:gochecknoinits // needed
 func init() {
+	if !IsValid(os.Stderr) { // wasm in browser case for instance
+		SetOutput(os.Stdout) // this could also be invalid too but... we tried.
+	}
 	setLevel(Info) // starting value
 	levelToStrM = make(map[string]Level, 2*len(LevelToStrA))
 	JSONStringLevelToLevel = make(map[string]Level, len(LevelToJSON)-1) // -1 to not reverse info to NoLevel

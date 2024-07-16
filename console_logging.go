@@ -88,6 +88,14 @@ var (
 	Color = false
 )
 
+func IsValid(file *os.File) bool {
+	if file == nil {
+		return false
+	}
+	_, err := file.Stat()
+	return err == nil
+}
+
 // ConsoleLogging is a utility to check if the current logger output is a console (terminal).
 func ConsoleLogging() bool {
 	f, ok := jWriter.w.(*os.File)
