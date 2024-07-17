@@ -12,7 +12,10 @@ const IsTinyGo = true
 var (
 	counter int64
 	mapping = make(map[uintptr]int64)
-	lock    sync.Mutex
+	// TinyGo at the moment is single threaded so this is not needed but it's good to have anyway
+	// in case that changes. It does had ~5ns (from 20ns vs 4ns big go) but it's better to be correct.
+	// In theory the mutex could be noop on platforms where everything is single threaded.
+	lock sync.Mutex
 )
 
 func ID() int64 {
