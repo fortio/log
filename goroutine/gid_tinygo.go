@@ -20,7 +20,7 @@ var (
 
 func ID() int64 {
 	task := uintptr(currentTask())
-	lock.Lock()
+	lock.Lock() // explicit minimal critical section without using defer, on purpose.
 	if id, ok := mapping[task]; ok {
 		lock.Unlock()
 		return id

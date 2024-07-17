@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -21,7 +22,7 @@ func TestID(t *testing.T) {
 	}
 	n := 1000000 // for regular go
 	if IsTinyGo {
-		n = 1000 // for tinygo
+		n = 1000 // for tinygo, it OOMs with 1000000 and we're only self testing that we get different increasing ids.
 	}
 	var wg sync.WaitGroup
 	for i := 0; i < n; i++ {
@@ -45,8 +46,7 @@ var testID int64
 func goid() int64 {
 	if IsTinyGo {
 		// pretty horrible test that aligns with the implementation, but at least it tests we get 1,2,3... different numbers.
-		testID++
-		return testID
+		return atomic.AddInt64(&testID, 1)
 	}
 	var buf [64]byte
 	n := runtime.Stack(buf[:], false)
@@ -58,7 +58,7 @@ func goid() int64 {
 	return id
 }
 
-var gotid int64
+var gotid int64 // outside of the function to help avoiding compiler optimizations
 
 func BenchmarkGID(b *testing.B) {
 	for n := 0; n < b.N; n++ {

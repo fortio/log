@@ -88,7 +88,9 @@ var (
 	Color = false
 )
 
-func IsValid(file *os.File) bool {
+// Is the file (e.g os.StdErr) Stat()able so we can detect if it's a tty or not.
+// If not we switch in init() to Stdout.
+func isValid(file *os.File) bool {
 	if file == nil {
 		return false
 	}
