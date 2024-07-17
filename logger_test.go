@@ -931,6 +931,9 @@ func TestConfigFromEnvOk(t *testing.T) {
 }
 
 func TestInvalidFile(t *testing.T) {
+	if isValid(nil) {
+		t.Errorf("expected nil to be invalid")
+	}
 	prev := jWriter.w
 	invalidFile := os.NewFile(^uintptr(0), "invalid-file")
 	jWriter.w = invalidFile
