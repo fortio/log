@@ -44,8 +44,9 @@ var testID int64
 // goid returns the goroutine ID extracted from a stack trace.
 func goid() int64 {
 	if IsTinyGo {
+		// pretty horrible test that aligns with the implementation, but at least it tests we get 1,2,3... different numbers.
 		testID++
-		return testID // pretty horrible test that aligns with the implementation, but at least it tests we get 1,2,3... different numbers.
+		return testID
 	}
 	var buf [64]byte
 	n := runtime.Stack(buf[:], false)
