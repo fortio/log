@@ -941,7 +941,7 @@ func TestInvalidFile(t *testing.T) {
 	}
 }
 
-// io.Discard but specially known to by logger optimizations for instance.
+// like io.Discard except io.Discard is checked for by logger optimizations and we want to avoid that.
 type discard struct{}
 
 func (discard) Write(p []byte) (int, error) {
