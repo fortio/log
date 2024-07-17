@@ -942,6 +942,7 @@ func TestInvalidFile(t *testing.T) {
 }
 
 // like io.Discard except io.Discard is checked for by logger optimizations and we want to avoid that.
+// e.g. https://cs.opensource.google/go/go/+/refs/tags/go1.22.5:src/log/log.go;l=84
 type discard struct{}
 
 func (discard) Write(p []byte) (int, error) {
