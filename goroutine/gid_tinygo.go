@@ -33,5 +33,7 @@ func ID() int64 {
 	//return int64(uintptr(currentTask()))
 }
 
+// Call https://github.com/tinygo-org/tinygo/blob/v0.32.0/src/internal/task/task_stack.go#L39
+//
 //go:linkname currentTask internal/task.Current
 func currentTask() unsafe.Pointer
