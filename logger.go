@@ -175,7 +175,7 @@ func (l *JSONEntry) Time() time.Time {
 //nolint:gochecknoinits // needed
 func init() {
 	if !isValid(os.Stderr) { // wasm in browser case for instance
-		SetOutput(os.Stdout) // this could also be invalid too but... we tried.
+		SetOutput(os.Stdout) // this could also be invalid too, but... we tried.
 	}
 	setLevel(Info) // starting value
 	levelToStrM = make(map[string]Level, 2*len(LevelToStrA))
