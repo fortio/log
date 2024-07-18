@@ -18,8 +18,6 @@
 package log
 
 import (
-	"crypto/tls"
-	"fmt"
 	"log"
 	"net/http"
 	"runtime/debug"
@@ -27,31 +25,6 @@ import (
 	"strings"
 	"time"
 )
-
-// TLSInfo returns ' https <cipher suite> "<peer CN>"' if the request is using TLS
-// (and ' "<peer CN>"' part if mtls / a peer certificate is present) or "" otherwise.
-// Use [AppendTLSInfoAttrs] unless you do want to just output text.
-func TLSInfo(r *http.Request) string {
-	if r.TLS == nil {
-		return ""
-	}
-	cliCert := ""
-	if len(r.TLS.PeerCertificates) > 0 {
-		cliCert = fmt.Sprintf(" %q", r.TLS.PeerCertificates[0].Subject)
-	}
-	return fmt.Sprintf(" https %s%s", tls.CipherSuiteName(r.TLS.CipherSuite), cliCert)
-}
-
-func AppendTLSInfoAttrs(attrs []KeyVal, r *http.Request) []KeyVal {
-	if r.TLS == nil {
-		return attrs
-	}
-	attrs = append(attrs, Attr("tls", true))
-	if len(r.TLS.PeerCertificates) > 0 {
-		attrs = append(attrs, Str("tls.peer_cn", r.TLS.PeerCertificates[0].Subject.CommonName))
-	}
-	return attrs
-}
 
 func AddIfNotEmpty(attrs []KeyVal, key, value string) []KeyVal {
 	if value != "" {

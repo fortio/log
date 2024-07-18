@@ -1,5 +1,5 @@
-//go:build !no_http && !no_net
-// +build !no_http,!no_net
+//go:build !no_http && !no_net && !tinygo
+// +build !no_http,!no_net,!tinygo
 
 package log // import "fortio.org/fortio/log"
 
