@@ -930,7 +930,26 @@ func TestConfigFromEnvOk(t *testing.T) {
 	}
 }
 
-// io.Discard but specially known to by logger optimizations for instance.
+func TestInvalidFile(t *testing.T) {
+	if isValid(nil) {
+		t.Errorf("expected nil to be invalid")
+	}
+	prev := jWriter.w
+	invalidFile := os.NewFile(^uintptr(0), "invalid-file")
+	jWriter.w = invalidFile
+	b := ConsoleLogging()
+	jWriter.w = prev
+	if b {
+		t.Errorf("expected not to be console logging")
+	}
+}
+
+// --- Benchmarks
+
+// This `discard` is like io.Discard, except that io.Discard is checked explicitly
+// (e.g. https://cs.opensource.google/go/go/+/refs/tags/go1.22.5:src/log/log.go;l=84)
+// in logger optimizations and we want to measure the actual production
+// of messages.
 type discard struct{}
 
 func (discard) Write(p []byte) (int, error) {

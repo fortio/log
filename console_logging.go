@@ -88,13 +88,26 @@ var (
 	Color = false
 )
 
+// Is the file (e.g os.StdErr) Stat()able so we can detect if it's a tty or not.
+// If not we switch in init() to Stdout.
+func isValid(file *os.File) bool {
+	if file == nil {
+		return false
+	}
+	_, err := file.Stat()
+	return err == nil
+}
+
 // ConsoleLogging is a utility to check if the current logger output is a console (terminal).
 func ConsoleLogging() bool {
 	f, ok := jWriter.w.(*os.File)
 	if !ok {
 		return false
 	}
-	s, _ := f.Stat()
+	s, err := f.Stat()
+	if err != nil {
+		return false
+	}
 	return (s.Mode() & os.ModeCharDevice) == os.ModeCharDevice
 }
 
