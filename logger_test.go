@@ -900,6 +900,7 @@ LOGGER_FORCE_COLOR=false
 LOGGER_GOROUTINE_ID=false
 LOGGER_COMBINE_REQUEST_AND_RESPONSE=false
 LOGGER_LEVEL='Info'
+LOGGER_IGNORE_CLI_MODE=false
 `
 	if actual != expected {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
@@ -920,6 +921,8 @@ func TestConfigFromEnvError(t *testing.T) {
 
 func TestConfigFromEnvOk(t *testing.T) {
 	t.Setenv("LOGGER_LEVEL", "verbose")
+	t.Setenv("LOGGER_IGNORE_CLI_MODE", "true")
+	t.Setenv("LOGGER_LOG_FILE_AND_LINE", "true") // earlier test disable this
 	var buf bytes.Buffer
 	SetOutput(&buf)
 	configFromEnv()
@@ -927,6 +930,16 @@ func TestConfigFromEnvOk(t *testing.T) {
 	expected := "Log level set from environment LOGGER_LEVEL to Verbose"
 	if !strings.Contains(actual, expected) {
 		t.Errorf("unexpected:\n%s\nvs:\n%s\n", actual, expected)
+	}
+	if !Config.IgnoreCliMode {
+		t.Errorf("expected IgnoreCLIMode to be true")
+	}
+	if Config.LogFileAndLine != true {
+		t.Errorf("expected initial LogFileAndLine to be true")
+	}
+	SetDefaultsForClientTools() // should be no-op, ie not turn off LogFileAndLine etc
+	if Config.LogFileAndLine != true {
+		t.Errorf("expected LogFileAndLine to still be true after SetDefaultsForClientTools with LOGGER_IGNORE_CLI_MODE=true")
 	}
 }
 
