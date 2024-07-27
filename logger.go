@@ -79,6 +79,9 @@ type LogConfig struct {
 	CombineRequestAndResponse bool
 	// String version of the log level, used for setting from environment.
 	Level string
+	// If true, ignore SetDefaultsForClientTools() calls even if set. Allows full line/file debug and basically
+	// imply configuration from the environment variables.
+	IgnoreCliMode bool
 }
 
 // DefaultConfig() returns the default initial configuration for the logger, best suited
@@ -135,7 +138,12 @@ var (
 // to make output without caller and prefix, a default more suitable for command line tools (like dnsping).
 // Needs to be called before flag.Parse(). Caller could also use log.Printf instead of changing this
 // if not wanting to use levels. Also makes log.Fatalf just exit instead of panic.
+// Will be ignored if the environment config has been set to ignore this.
 func SetDefaultsForClientTools() {
+	if Config.IgnoreCliMode {
+		Infof("Ignoring SetDefaultsForClientTools() call due to LOGGER_IGNORE_CLI_MODE environment config")
+		return
+	}
 	Config.LogPrefix = " "
 	Config.LogFileAndLine = false
 	Config.FatalPanics = false
