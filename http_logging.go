@@ -184,13 +184,17 @@ func (rr *ResponseRecorder) Flush() {
 func LogAndCall(msg string, handlerFunc http.HandlerFunc, extraAttributes ...KeyVal) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// This is really 2 functions but we want to be able to change config without rewiring the middleware
-		if Config.CombineRequestAndResponse {
+		if Config.CombineRequestAndResponse { //nolint:nestif // see above comment.
 			respRec := &ResponseRecorder{w: w, startTime: time.Now()}
 			defer func() {
 				if err := recover(); err != nil {
 					s(Critical, false, Config.JSON, "panic in handler", Any("error", err))
 					if Log(Verbose) {
 						s(Verbose, false, Config.JSON, "stack trace", Str("stack", string(debug.Stack())))
+					}
+					respRec.StatusCode = -500       // Marking as a panic for the log.
+					if respRec.ContentLength == 0 { // Nothing was written yet so we can write an error
+						http.Error(w, fmt.Sprintf("Internal Server Error\n%s", err), http.StatusInternalServerError)
 					}
 				}
 				attr := []KeyVal{
