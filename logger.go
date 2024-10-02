@@ -43,7 +43,7 @@ import (
 )
 
 // Level is the level of logging (0 Debug -> 6 Fatal).
-type Level int32
+type Level int8
 
 // Log levels. Go can't have variable and function of the same name so we keep
 // medium length (Dbg,Info,Warn,Err,Crit,Fatal) names for the functions.
@@ -180,6 +180,13 @@ func (l *JSONEntry) Time() time.Time {
 	)
 }
 
+func intToLevel(i int) Level {
+	if i < 0 || i >= len(LevelToStrA) {
+		return -1
+	}
+	return Level(i) //nolint:gosec // we just checked above.
+}
+
 //nolint:gochecknoinits // needed
 func init() {
 	if !isValid(os.Stderr) { // wasm in browser case for instance
@@ -190,12 +197,13 @@ func init() {
 	JSONStringLevelToLevel = make(map[string]Level, len(LevelToJSON)-1) // -1 to not reverse info to NoLevel
 	for l, name := range LevelToStrA {
 		// Allow both -loglevel Verbose and -loglevel verbose ...
-		levelToStrM[name] = Level(l)
-		levelToStrM[strings.ToLower(name)] = Level(l)
+		lvl := intToLevel(l)
+		levelToStrM[name] = lvl
+		levelToStrM[strings.ToLower(name)] = lvl
 	}
 	for l, name := range LevelToJSON[0 : Fatal+1] { // Skip NoLevel
 		// strip the quotes around
-		JSONStringLevelToLevel[name[1:len(name)-1]] = Level(l)
+		JSONStringLevelToLevel[name[1:len(name)-1]] = intToLevel(l)
 	}
 	log.SetFlags(log.Ltime)
 	configFromEnv()
@@ -339,7 +347,7 @@ func EnvHelp(w io.Writer) {
 
 // GetLogLevel returns the currently configured LogLevel.
 func GetLogLevel() Level {
-	return Level(atomic.LoadInt32(&levelInternal))
+	return intToLevel(int(atomic.LoadInt32(&levelInternal)))
 }
 
 // Log returns true if a given level is currently logged.
