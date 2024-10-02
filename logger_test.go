@@ -957,6 +957,22 @@ func TestInvalidFile(t *testing.T) {
 	}
 }
 
+func TestConcurrentLevelSet(t *testing.T) {
+	// This test is to make sure that setting the log level concurrently
+	// doesn't cause a -race failure. Shows up in dflag/ for instance with configmap changes.
+	var wg sync.WaitGroup
+	wg.Add(int(Fatal - Verbose))
+	for i := Verbose; i < Fatal; i++ {
+		go func(lvl Level) {
+			SetLogLevel(lvl)
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+	SetLogLevel(Info)
+	t.Logf("log level is now %s", GetLogLevel().String())
+}
+
 // --- Benchmarks
 
 // This `discard` is like io.Discard, except that io.Discard is checked explicitly

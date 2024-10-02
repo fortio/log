@@ -327,7 +327,9 @@ func setLogLevel(lvl Level, logChange bool) Level {
 			logUnconditionalf(Config.LogFileAndLine, Info, "Log level is now %d %s (was %d %s)", lvl, lvl.String(), prev, prev.String())
 		}
 		setLevel(lvl)
+		jWriter.mutex.Lock()
 		Config.Level = lvl.String()
+		jWriter.mutex.Unlock()
 	}
 	return prev
 }
@@ -368,6 +370,7 @@ func Logf(lvl Level, format string, rest ...interface{}) {
 }
 
 // Used when doing our own logging writing, in JSON/structured mode (and some color variants as well, misnomer).
+// Also reusing that lock to update global Config.Level.
 var (
 	jWriter = jsonWriter{w: os.Stderr, tsBuf: make([]byte, 0, 32)}
 )
