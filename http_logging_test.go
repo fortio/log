@@ -46,26 +46,32 @@ func TestLogRequest(t *testing.T) {
 }
 
 func testHandler(w http.ResponseWriter, r *http.Request) {
+	if r.URL != nil && r.URL.Path == "/panicbefore" {
+		panic("some test handler panic before response")
+	}
 	if r.URL != nil && r.URL.Path == "/tea" {
 		w.WriteHeader(http.StatusTeapot)
 	}
 	w.Write([]byte("hello"))
 	time.Sleep(100 * time.Millisecond)
+	if r.URL != nil && r.URL.Path == "/panicafter" {
+		panic("some test handler panic after response")
+	}
 }
 
 type NullHTTPWriter struct {
 	doErr   bool
-	doPanic bool
+	headers http.Header
 }
 
 func (n *NullHTTPWriter) Header() http.Header {
-	return nil
+	if n.headers == nil {
+		n.headers = make(http.Header)
+	}
+	return n.headers
 }
 
 func (n *NullHTTPWriter) Write(b []byte) (int, error) {
-	if n.doPanic {
-		panic("some fake http write panic")
-	}
 	if n.doErr {
 		return 0, errors.New("some fake http write error")
 	}
@@ -100,7 +106,7 @@ func TestLogAndCall(t *testing.T) {
 	if !strings.HasPrefix(actual, expectedPrefix) {
 		t.Errorf("unexpected:\n%s\nvs should start with:\n%s\n", actual, expectedPrefix)
 	}
-	if hw.Header() != nil {
+	if len(hw.Header()) != 0 {
 		t.Errorf("unexpected non nil header: %v", hw.Header())
 	}
 	hr.URL = &url.URL{Path: "/tea"}
@@ -123,20 +129,33 @@ func TestLogAndCall(t *testing.T) {
 	if !strings.Contains(actual, expectedFragment) {
 		t.Errorf("unexpected:\n%s\nvs should contain error:\n%s\n", actual, expectedFragment)
 	}
-	n.doPanic = true
+	hr.URL = &url.URL{Path: "/panicafter"}
 	n.doErr = false
 	SetLogLevelQuiet(Verbose)
 	b.Reset()
 	LogAndCall("test-log-and-call4", testHandler).ServeHTTP(hw, hr)
 	w.Flush()
 	actual = b.String()
-	expectedFragment = `,"size":0,`
+	expectedFragment = `"status":-500,`
 	Config.GoroutineID = false
 	if !strings.Contains(actual, expectedFragment) {
 		t.Errorf("unexpected:\n%s\nvs should contain error:\n%s\n", actual, expectedFragment)
 	}
-	if !strings.Contains(actual, `{"level":"crit","msg":"panic in handler","error":"some fake http write panic"`) {
-		t.Errorf("unexpected:\n%s\nvs should contain error:\n%s\n", actual, "some fake http write panic")
+	if !strings.Contains(actual, `{"level":"crit","msg":"panic in handler","error":"some test handler panic after response"}`) {
+		t.Errorf("unexpected:\n%s\nvs should contain error:\n%s\n", actual, "some test handler panic after response")
+	}
+	hr.URL = &url.URL{Path: "/panicbefore"}
+	b.Reset()
+	LogAndCall("test-log-and-call5", testHandler).ServeHTTP(hw, hr)
+	w.Flush()
+	actual = b.String()
+	expectedFragment = `"status":-500,`
+	Config.GoroutineID = false
+	if !strings.Contains(actual, expectedFragment) {
+		t.Errorf("unexpected:\n%s\nvs should contain error:\n%s\n", actual, expectedFragment)
+	}
+	if !strings.Contains(actual, `{"level":"crit","msg":"panic in handler","error":"some test handler panic before response"}`) {
+		t.Errorf("unexpected:\n%s\nvs should contain error:\n%s\n", actual, "some test handler panic before response")
 	}
 	// restore for other tests
 	Config.GoroutineID = true
