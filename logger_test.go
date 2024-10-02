@@ -963,13 +963,14 @@ func TestConcurrentLevelSet(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(int(Fatal - Verbose))
 	for i := Verbose; i < Fatal; i++ {
-		go func() {
-			SetLogLevel(i)
+		go func(lvl Level) {
+			SetLogLevel(lvl)
 			wg.Done()
-		}()
+		}(i)
 	}
 	wg.Wait()
 	SetLogLevel(Info)
+	t.Logf("log level is now %s", GetLogLevel().String())
 }
 
 // --- Benchmarks
