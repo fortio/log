@@ -48,7 +48,7 @@ func (v ValueType[T]) String() string {
 		return fmt.Sprintf("%q", s)
 	case error:
 		// Sadly structured errors like nettwork error don't have the reason in
-		// the exposed struct/JSON - ie on gets
+		// the exposed struct/JSON - ie one gets
 		// {"Op":"read","Net":"tcp","Source":{"IP":"127.0.0.1","Port":60067,"Zone":""},
 		// "Addr":{"IP":"127.0.0.1","Port":3000,"Zone":""},"Err":{}}
 		// instead of
