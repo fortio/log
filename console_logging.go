@@ -116,6 +116,7 @@ func ConsoleLogging() bool {
 // It will reset the Colors variable to either be the actual escape sequences or empty strings (when
 // color is disabled).
 func SetColorMode() {
+	Config.ConsoleLogging = ConsoleLogging()
 	Color = ColorMode()
 	if Color {
 		Colors = ANSIColors
@@ -139,7 +140,7 @@ func SetColorMode() {
 // forced or because we are in a console and the config allows it.
 // Should not be called often, instead read/update the Color variable when needed.
 func ColorMode() bool {
-	return Config.ForceColor || (Config.ConsoleColor && ConsoleLogging())
+	return Config.ForceColor || (Config.ConsoleColor && Config.ConsoleLogging)
 }
 
 func colorTimestamp() string {

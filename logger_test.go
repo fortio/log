@@ -597,6 +597,9 @@ func TestLogFatal(t *testing.T) {
 }
 
 func TestLoggerFatalCliMode(t *testing.T) {
+	// Pretend we're console logging as indeed in tests the stderr is redirected
+	// and SetDefaultsForClientTools() would skip setting up the exit mode etc.
+	Config.ConsoleLogging = true
 	SetDefaultsForClientTools()
 	if os.Getenv("DO_LOG_FATALF") == "1" {
 		Fatalf("test")
@@ -881,6 +884,7 @@ func TestSerializationOfError(t *testing.T) {
 }
 
 func TestEnvHelp(t *testing.T) {
+	Config.ConsoleLogging = true // pretend we aren't redirected.
 	SetDefaultsForClientTools()
 	Config.NoTimestamp = false
 	// Setup

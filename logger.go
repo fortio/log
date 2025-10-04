@@ -82,6 +82,10 @@ type LogConfig struct {
 	// If true, ignore SetDefaultsForClientTools() calls even if set. Allows full line/file debug and basically
 	// imply configuration from the environment variables.
 	IgnoreCliMode bool
+	// True if we are logging to a console (terminal) eg result of ConsoleLogging().
+	// False will disable SetDefaultsForClientTools() so if you want it despite a redirect
+	// you can set ConsoleLogging to true artificially.
+	ConsoleLogging bool `env:"-"`
 }
 
 // DefaultConfig() returns the default initial configuration for the logger, best suited
@@ -138,16 +142,22 @@ var (
 // to make output without caller and prefix, a default more suitable for command line tools (like dnsping).
 // Needs to be called before flag.Parse(). Caller could also use log.Printf instead of changing this
 // if not wanting to use levels. Also makes log.Fatalf just exit instead of panic.
-// Will be ignored if the environment config has been set to ignore this.
+// Will be ignored if the environment config LOGGER_IGNORE_CLI_MODE has been set to ignore this.
+// Will also be ignored if ServerMode is true.
+// Will also be ignored if stderr has been redirected (not a terminal).
 func SetDefaultsForClientTools() {
 	if Config.IgnoreCliMode {
 		Infof("Ignoring SetDefaultsForClientTools() call due to LOGGER_IGNORE_CLI_MODE environment config")
 		return
 	}
+	if !Config.ConsoleLogging {
+		Infof("Ignoring SetDefaultsForClientTools() call due to non console logging")
+		return
+	}
 	Config.LogPrefix = " "
 	Config.LogFileAndLine = false
 	Config.FatalPanics = false
-	Config.ConsoleColor = true
+	Config.ConsoleColor = os.Getenv("NO_COLOR") == ""
 	Config.JSON = false
 	Config.GoroutineID = false
 	Config.CombineRequestAndResponse = false
@@ -214,6 +224,9 @@ func init() {
 func configFromEnv() {
 	prev := Config.Level
 	struct2env.SetFromEnv(EnvPrefix, Config)
+	if os.Getenv("NO_COLOR") != "" {
+		Config.ConsoleColor = false
+	}
 	if Config.Level != "" && Config.Level != prev {
 		lvl, err := ValidateLevel(Config.Level)
 		if err != nil {
@@ -344,6 +357,10 @@ func EnvHelp(w io.Writer) {
 	res, _ := struct2env.StructToEnvVars(Config)
 	str := struct2env.ToShellWithPrefix(EnvPrefix, res, true)
 	fmt.Fprintln(w, "# Logger environment variables:")
+	// Mention that NO_COLOR is supported too.
+	search := fmt.Sprintf("LOGGER_CONSOLE_COLOR=%t", Config.ConsoleColor)
+	replace := fmt.Sprintf("%s # or set NO_COLOR to disable", search)
+	str = strings.Replace(str, search, replace, 1)
 	fmt.Fprint(w, str)
 }
 
@@ -507,7 +524,7 @@ func Printf(format string, rest ...interface{}) {
 func SetOutput(w io.Writer) {
 	jWriter.w = w
 	log.SetOutput(w)
-	SetColorMode() // Colors.Reset color mode boolean
+	SetColorMode() // Resets color mode boolean (and console logging detection)
 }
 
 // SetFlags forwards flags to the system logger.
