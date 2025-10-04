@@ -138,6 +138,14 @@ var (
 	JSONStringLevelToLevel map[string]Level
 )
 
+// Handle NO_COLOR environment variable to disable color output.
+// Called from both places we want to override ConsoleColor.
+func applyNoColorEnv() {
+	if os.Getenv("NO_COLOR") != "" {
+		Config.ConsoleColor = false
+	}
+}
+
 // SetDefaultsForClientTools changes the default value of LogPrefix and LogFileAndLine
 // to make output without caller and prefix, a default more suitable for command line tools (like dnsping).
 // Needs to be called before flag.Parse(). Caller could also use log.Printf instead of changing this
@@ -157,10 +165,11 @@ func SetDefaultsForClientTools() {
 	Config.LogPrefix = " "
 	Config.LogFileAndLine = false
 	Config.FatalPanics = false
-	Config.ConsoleColor = os.Getenv("NO_COLOR") == ""
+	Config.ConsoleColor = true
 	Config.JSON = false
 	Config.GoroutineID = false
 	Config.CombineRequestAndResponse = false
+	applyNoColorEnv()
 	SetColorMode()
 }
 
@@ -224,9 +233,7 @@ func init() {
 func configFromEnv() {
 	prev := Config.Level
 	struct2env.SetFromEnv(EnvPrefix, Config)
-	if os.Getenv("NO_COLOR") != "" {
-		Config.ConsoleColor = false
-	}
+	applyNoColorEnv()
 	if Config.Level != "" && Config.Level != prev {
 		lvl, err := ValidateLevel(Config.Level)
 		if err != nil {
