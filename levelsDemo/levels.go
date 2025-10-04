@@ -9,6 +9,8 @@ import (
 
 func main() {
 	log.SetLogLevelQuiet(log.Debug)
+	// Could also call: log.SetDefaultsForClientTools() instead of setting these 3 fields manually.
+	// but it would be ignored when redirecting.
 	log.Config.LogFileAndLine = false
 	log.Config.LogPrefix = ""
 	log.Config.GoroutineID = false

@@ -68,7 +68,7 @@ func Test_LogS_JSON_Map(t *testing.T) {
 	S(Verbose, "Test Map", Any("map", tst), Int64("in64", 0), Bool("bool", true))
 	_ = w.Flush()
 	actual := b.String()
-	//nolint:lll
+	//nolint:lll // long lines in expected.
 	expected := `{"level":"trace","msg":"Test Map","map":{"number":3.14,"str1":"val 1","subArray":["x",42,"y"]},"in64":0,"bool":true}` +
 		"\n"
 	if actual != expected {

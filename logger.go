@@ -82,6 +82,10 @@ type LogConfig struct {
 	// If true, ignore SetDefaultsForClientTools() calls even if set. Allows full line/file debug and basically
 	// imply configuration from the environment variables.
 	IgnoreCliMode bool
+	// True if we are logging to a console (terminal) eg result of ConsoleLogging().
+	// False will disable SetDefaultsForClientTools() so if you want it despite a redirect
+	// you can set ConsoleLogging to true artificially.
+	ConsoleLogging bool `env:"-"`
 }
 
 // DefaultConfig() returns the default initial configuration for the logger, best suited
@@ -134,14 +138,28 @@ var (
 	JSONStringLevelToLevel map[string]Level
 )
 
+// Handle NO_COLOR environment variable to disable color output.
+// Called from both places we want to override ConsoleColor.
+func applyNoColorEnv() {
+	if os.Getenv("NO_COLOR") != "" {
+		Config.ConsoleColor = false
+	}
+}
+
 // SetDefaultsForClientTools changes the default value of LogPrefix and LogFileAndLine
 // to make output without caller and prefix, a default more suitable for command line tools (like dnsping).
 // Needs to be called before flag.Parse(). Caller could also use log.Printf instead of changing this
 // if not wanting to use levels. Also makes log.Fatalf just exit instead of panic.
-// Will be ignored if the environment config has been set to ignore this.
+// Will be ignored if the environment config LOGGER_IGNORE_CLI_MODE has been set to ignore this.
+// Will also be ignored if ServerMode is true.
+// Will also be ignored if stderr has been redirected (not a terminal).
 func SetDefaultsForClientTools() {
 	if Config.IgnoreCliMode {
 		Infof("Ignoring SetDefaultsForClientTools() call due to LOGGER_IGNORE_CLI_MODE environment config")
+		return
+	}
+	if !Config.ConsoleLogging {
+		Infof("Ignoring SetDefaultsForClientTools() call due to non console logging")
 		return
 	}
 	Config.LogPrefix = " "
@@ -151,6 +169,7 @@ func SetDefaultsForClientTools() {
 	Config.JSON = false
 	Config.GoroutineID = false
 	Config.CombineRequestAndResponse = false
+	applyNoColorEnv()
 	SetColorMode()
 }
 
@@ -214,6 +233,7 @@ func init() {
 func configFromEnv() {
 	prev := Config.Level
 	struct2env.SetFromEnv(EnvPrefix, Config)
+	applyNoColorEnv()
 	if Config.Level != "" && Config.Level != prev {
 		lvl, err := ValidateLevel(Config.Level)
 		if err != nil {
@@ -344,6 +364,10 @@ func EnvHelp(w io.Writer) {
 	res, _ := struct2env.StructToEnvVars(Config)
 	str := struct2env.ToShellWithPrefix(EnvPrefix, res, true)
 	fmt.Fprintln(w, "# Logger environment variables:")
+	// Mention that NO_COLOR is supported too.
+	search := fmt.Sprintf("LOGGER_CONSOLE_COLOR=%t", Config.ConsoleColor)
+	replace := search + " # or set NO_COLOR to disable"
+	str = strings.Replace(str, search, replace, 1)
 	fmt.Fprint(w, str)
 }
 
@@ -460,7 +484,7 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 	if lvl == NoLevel {
 		prefix = ""
 	}
-	if logFileAndLine { //nolint:nestif
+	if logFileAndLine { //nolint:nestif // tiny bit complicated yes.
 		_, file, line, _ := runtime.Caller(3)
 		file = file[strings.LastIndex(file, "/")+1:]
 		switch {
@@ -507,7 +531,7 @@ func Printf(format string, rest ...interface{}) {
 func SetOutput(w io.Writer) {
 	jWriter.w = w
 	log.SetOutput(w)
-	SetColorMode() // Colors.Reset color mode boolean
+	SetColorMode() // Resets color mode boolean (and console logging detection)
 }
 
 // SetFlags forwards flags to the system logger.
@@ -523,7 +547,7 @@ func Debugf(format string, rest ...interface{}) {
 }
 
 // LogVf logs if Verbose level is on.
-func LogVf(format string, rest ...interface{}) { //nolint:revive
+func LogVf(format string, rest ...interface{}) { //nolint:revive // yeah no a bit of stutter is fine here.
 	logPrintf(Verbose, format, rest...)
 }
 
@@ -575,12 +599,12 @@ func FErrf(format string, rest ...interface{}) int {
 }
 
 // LogDebug shortcut for fortio.Log(fortio.Debug).
-func LogDebug() bool { //nolint:revive
+func LogDebug() bool { //nolint:revive // yeah no a bit of stutter is fine here.
 	return Log(Debug)
 }
 
 // LogVerbose shortcut for fortio.Log(fortio.Verbose).
-func LogVerbose() bool { //nolint:revive
+func LogVerbose() bool { //nolint:revive // yeah no a bit of stutter is fine here.
 	return Log(Verbose)
 }
 
