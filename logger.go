@@ -359,7 +359,7 @@ func EnvHelp(w io.Writer) {
 	fmt.Fprintln(w, "# Logger environment variables:")
 	// Mention that NO_COLOR is supported too.
 	search := fmt.Sprintf("LOGGER_CONSOLE_COLOR=%t", Config.ConsoleColor)
-	replace := fmt.Sprintf("%s # or set NO_COLOR to disable", search)
+	replace := search + " # or set NO_COLOR to disable"
 	str = strings.Replace(str, search, replace, 1)
 	fmt.Fprint(w, str)
 }
@@ -477,7 +477,7 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 	if lvl == NoLevel {
 		prefix = ""
 	}
-	if logFileAndLine { //nolint:nestif
+	if logFileAndLine { //nolint:nestif // tiny bit complicated yes.
 		_, file, line, _ := runtime.Caller(3)
 		file = file[strings.LastIndex(file, "/")+1:]
 		switch {
@@ -540,7 +540,7 @@ func Debugf(format string, rest ...interface{}) {
 }
 
 // LogVf logs if Verbose level is on.
-func LogVf(format string, rest ...interface{}) { //nolint:revive
+func LogVf(format string, rest ...interface{}) { //nolint:revive // yeah no a bit of stutter is fine here.
 	logPrintf(Verbose, format, rest...)
 }
 
@@ -592,12 +592,12 @@ func FErrf(format string, rest ...interface{}) int {
 }
 
 // LogDebug shortcut for fortio.Log(fortio.Debug).
-func LogDebug() bool { //nolint:revive
+func LogDebug() bool { //nolint:revive // yeah no a bit of stutter is fine here.
 	return Log(Debug)
 }
 
 // LogVerbose shortcut for fortio.Log(fortio.Verbose).
-func LogVerbose() bool { //nolint:revive
+func LogVerbose() bool { //nolint:revive // yeah no a bit of stutter is fine here.
 	return Log(Verbose)
 }
 

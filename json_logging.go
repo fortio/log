@@ -57,9 +57,8 @@ func (v ValueType[T]) String() string {
 		_, hasMarshaller := s.(json.Marshaler)
 		if hasMarshaller {
 			return toJSON(v.Val)
-		} else {
-			return fmt.Sprintf("%q", s.Error())
 		}
+		return fmt.Sprintf("%q", s.Error())
 	/* It's all handled by json fallback now even though slightly more expensive at runtime, it's a lot simpler */
 	default:
 		return toJSON(v.Val) // was fmt.Sprintf("%q", fmt.Sprint(v.Val))
