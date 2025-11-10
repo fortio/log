@@ -31,7 +31,8 @@ This is **Fortio's logging library** - a simple, opinionated logger built on top
 
 ### Code Style
 - Follow standard Go conventions
-- Use `golangci-lint` for linting (config fetched from fortio/workflows)
+- Run `make lint` when making changes (currently uses golangci-lint v2.5.0, may change based on fortio/workflows)
+- Linting configuration is fetched from fortio/workflows
 - Avoid global state mutation in tests
 - Prefer table-driven tests
 
