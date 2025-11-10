@@ -1,5 +1,4 @@
 //go:build !no_json
-// +build !no_json
 
 package log // import "fortio.org/fortio/log"
 

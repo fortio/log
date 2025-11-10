@@ -39,7 +39,7 @@ func Test_LogS_JSON_Array(t *testing.T) {
 	Config.NoTimestamp = true
 	SetOutput(w)
 	// Start of the actual test
-	S(Verbose, "Test Array", Any("arr", []interface{}{"x", 42, "y"}))
+	S(Verbose, "Test Array", Any("arr", []any{"x", 42, "y"}))
 	_ = w.Flush()
 	actual := b.String()
 	expected := `{"level":"trace","msg":"Test Array","arr":["x",42,"y"]}` + "\n"
@@ -58,9 +58,9 @@ func Test_LogS_JSON_Map(t *testing.T) {
 	Config.NoTimestamp = true
 	SetOutput(w)
 	// Start of the actual test
-	tst := map[string]interface{}{
+	tst := map[string]any{
 		"str1": "val 1",
-		"subArray": []interface{}{
+		"subArray": []any{
 			"x", 42, "y",
 		},
 		"number": 3.14,
