@@ -136,7 +136,7 @@ func LogResponse[T *ResponseRecorder | *http.Response](r T, msg string, extraAtt
 	s(Info, false, Config.JSON, msg, attr...)
 }
 
-// Can be used (and is used by LogAndCall()) to wrap a http.ResponseWriter to record status code and size.
+// ResponseRecorder can be used (and is used by LogAndCall()) to wrap a http.ResponseWriter to record status code and size.
 type ResponseRecorder struct {
 	w             http.ResponseWriter
 	startTime     time.Time
@@ -164,7 +164,7 @@ func (rr *ResponseRecorder) WriteHeader(code int) {
 	rr.StatusCode = code
 }
 
-// Implement http.Flusher interface.
+// Flush implements http.Flusher interface.
 func (rr *ResponseRecorder) Flush() {
 	if f, ok := rr.w.(http.Flusher); ok {
 		f.Flush()
@@ -220,7 +220,7 @@ type logWriter struct {
 	level  Level
 }
 
-// Returns a Std logger that will log to the given level with the given source attribute.
+// NewStdLogger returns a Std logger that will log to the given level with the given source attribute.
 // Can be passed for instance to net/http/httputil.ReverseProxy.ErrorLog.
 func NewStdLogger(source string, level Level) *log.Logger {
 	return log.New(logWriter{source, level}, "", 0)

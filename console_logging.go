@@ -40,7 +40,7 @@ type color struct {
 var (
 	// these should really be constants but go doesn't have constant structs, arrays etc...
 
-	// ANSI color codes.
+	// ANSIColors are ANSI color codes.
 	// This isn't meant to be used directly and is here only to document the names of the struct.
 	// Use the Colors variable instead.
 	ANSIColors = color{
@@ -57,12 +57,12 @@ var (
 		DarkGray:  "\033[90m",
 	}
 
-	// ANSI color codes or empty depending on ColorMode.
+	// Colors are ANSI color codes or empty depending on ColorMode.
 	// These will be reset to empty string if color is disabled (see ColorMode() and SetColorMode()).
 	// Start with actual colors, will be reset to empty if color is disabled.
 	Colors = ANSIColors
 
-	// Mapping of log levels to color.
+	// LevelToColor is the mapping of log levels to color.
 	LevelToColor = []string{
 		Colors.Gray,
 		Colors.Cyan,
@@ -73,7 +73,7 @@ var (
 		Colors.BrightRed,
 		Colors.Green, // NoLevel log.Printf
 	}
-	// Used for color version of console logging.
+	// LevelToText is used for color version of console logging.
 	LevelToText = []string{
 		"DBG",
 		"VRB",
@@ -84,7 +84,7 @@ var (
 		"FTL",
 		"",
 	}
-	// Cached flag for whether to use color output or not.
+	// Color is a cached flag for whether to use color output or not.
 	Color = false
 )
 
@@ -158,7 +158,7 @@ func colorGID() string {
 	return Colors.Gray + fmt.Sprintf("r%d ", goroutine.ID())
 }
 
-// Longer version when colorizing on console of the level text.
+// ColorLevelToStr returns a longer version when colorizing on console of the level text.
 func ColorLevelToStr(lvl Level) string {
 	if lvl == NoLevel {
 		return Colors.DarkGray
