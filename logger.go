@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /*
-Fortio's log is simple logger built on top of go's default one with
+Package log is Fortio's simple logger built on top of go's default one with
 additional opinionated levels similar to glog but simpler to use and configure.
 
 See [Config] object for options like whether to include line number and file name of caller or not etc
@@ -56,7 +56,10 @@ const (
 	Critical
 	Fatal
 	NoLevel
-	// Prefix for all config from environment,
+)
+
+const (
+	// EnvPrefix is the prefix for all config from environment,
 	// e.g NoTimestamp becomes LOGGER_NO_TIMESTAMP.
 	EnvPrefix = "LOGGER_"
 )
@@ -108,7 +111,7 @@ func DefaultConfig() *LogConfig {
 
 var (
 	Config = DefaultConfig()
-	// Used for dynamic flag setting as strings and validation.
+	// LevelToStrA is used for dynamic flag setting as strings and validation.
 	LevelToStrA = []string{
 		"Debug",
 		"Verbose",
@@ -120,7 +123,7 @@ var (
 	}
 	levelToStrM   map[string]Level
 	levelInternal int32
-	// Used for JSON logging.
+	// LevelToJSON is used for JSON logging.
 	LevelToJSON = []string{
 		// matching https://github.com/grafana/grafana/blob/main/docs/sources/explore/logs-integration.md
 		// adding the "" around to save processing when generating json. using short names to save some bytes.
@@ -133,7 +136,7 @@ var (
 		"\"fatal\"",
 		"\"info\"", // For Printf / NoLevel JSON output
 	}
-	// Reverse mapping of level string used in JSON to Level. Used by https://github.com/fortio/logc
+	// JSONStringLevelToLevel is the reverse mapping of level string used in JSON to Level. Used by https://github.com/fortio/logc
 	// to interpret and colorize pre existing JSON logs.
 	JSONStringLevelToLevel map[string]Level
 )
@@ -306,7 +309,7 @@ func (f *flagValidation) Set(inp string) error {
 
 // --- End of code/types needed string to level custom flag validation section ---
 
-// Sets level from string (called by dflags).
+// SetLogLevelStr sets level from string (called by dflags).
 // Use https://pkg.go.dev/fortio.org/dflag/dynloglevel#LoggerFlagSetup to set up
 // `-loglevel` as a dynamic flag (or an example of how this function is used).
 func SetLogLevelStr(str string) error {
@@ -416,7 +419,7 @@ func jsonWriteBytes(msg []byte) {
 	jWriter.mutex.Unlock()
 }
 
-// Converts a time.Time to a float64 timestamp (seconds since epoch at microsecond resolution).
+// TimeToTS converts a time.Time to a float64 timestamp (seconds since epoch at microsecond resolution).
 // This is what is used in JSONEntry.TS.
 func TimeToTS(t time.Time) float64 {
 	// note that nanos like 1688763601.199999400 become 1688763601.1999996 in float64 (!)
@@ -580,7 +583,7 @@ func Fatalf(format string, rest ...interface{}) {
 	Config.FatalExit(1)
 }
 
-// FErrF logs a fatal error and returns 1.
+// FErrf logs a fatal error and returns 1.
 // meant for cli main functions written like:
 //
 //	func main() { os.Exit(Main()) }
@@ -645,7 +648,7 @@ func Str(key, value string) KeyVal {
 	return Any(key, value)
 }
 
-// Few more slog style short cuts.
+// Int is one of the few more slog style short cuts.
 func Int(key string, value int) KeyVal {
 	return Any(key, value)
 }
@@ -681,7 +684,7 @@ type ValueType[T ValueTypes] struct {
 	Val T
 }
 
-// Our original name, now switched to slog style Any.
+// Attr is our original name, now switched to slog style Any.
 func Attr[T ValueTypes](key string, value T) KeyVal {
 	return Any(key, value)
 }
