@@ -159,7 +159,7 @@ func SetDefaultsForClientTools() {
 		return
 	}
 	if !Config.ConsoleLogging {
-		Infof("Ignoring SetDefaultsForClientTools() call due to non console logging")
+		LogVf("Ignoring SetDefaultsForClientTools() call due to non console logging")
 		return
 	}
 	Config.LogPrefix = " "
