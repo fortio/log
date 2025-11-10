@@ -392,7 +392,7 @@ func LevelByName(str string) Level {
 // Logf logs with format at the given level.
 // 2 level of calls so it's always same depth for extracting caller file/line.
 // Note that log.Logf(Fatal, "...") will not panic or exit, only log.Fatalf() does.
-func Logf(lvl Level, format string, rest ...interface{}) {
+func Logf(lvl Level, format string, rest ...any) {
 	logPrintf(lvl, format, rest...)
 }
 
@@ -452,7 +452,7 @@ func jsonGID() string {
 	return fmt.Sprintf("\"r\":%d,", goroutine.ID())
 }
 
-func logPrintf(lvl Level, format string, rest ...interface{}) {
+func logPrintf(lvl Level, format string, rest ...any) {
 	if !Log(lvl) {
 		return
 	}
@@ -478,7 +478,7 @@ func logSimpleJSON(lvl Level, msg string) {
 	jWriter.mutex.Unlock()
 }
 
-func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...interface{}) {
+func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...any) {
 	prefix := Config.LogPrefix
 	if prefix == "" {
 		prefix = " "
@@ -526,7 +526,7 @@ func logUnconditionalf(logFileAndLine bool, lvl Level, format string, rest ...in
 }
 
 // Printf forwards to the underlying go logger to print (with only timestamp prefixing).
-func Printf(format string, rest ...interface{}) {
+func Printf(format string, rest ...any) {
 	logUnconditionalf(false, NoLevel, format, rest...)
 }
 
@@ -545,37 +545,37 @@ func SetFlags(f int) {
 // -- would be nice to be able to create those in a loop instead of copypasta:
 
 // Debugf logs if Debug level is on.
-func Debugf(format string, rest ...interface{}) {
+func Debugf(format string, rest ...any) {
 	logPrintf(Debug, format, rest...)
 }
 
 // LogVf logs if Verbose level is on.
-func LogVf(format string, rest ...interface{}) { //nolint:revive // yeah no a bit of stutter is fine here.
+func LogVf(format string, rest ...any) { //nolint:revive // yeah no a bit of stutter is fine here.
 	logPrintf(Verbose, format, rest...)
 }
 
 // Infof logs if Info level is on.
-func Infof(format string, rest ...interface{}) {
+func Infof(format string, rest ...any) {
 	logPrintf(Info, format, rest...)
 }
 
 // Warnf logs if Warning level is on.
-func Warnf(format string, rest ...interface{}) {
+func Warnf(format string, rest ...any) {
 	logPrintf(Warning, format, rest...)
 }
 
 // Errf logs if Warning level is on.
-func Errf(format string, rest ...interface{}) {
+func Errf(format string, rest ...any) {
 	logPrintf(Error, format, rest...)
 }
 
 // Critf logs if Warning level is on.
-func Critf(format string, rest ...interface{}) {
+func Critf(format string, rest ...any) {
 	logPrintf(Critical, format, rest...)
 }
 
 // Fatalf logs if Warning level is on and panics or exits.
-func Fatalf(format string, rest ...interface{}) {
+func Fatalf(format string, rest ...any) {
 	logPrintf(Fatal, format, rest...)
 	if Config.FatalPanics {
 		panic("aborting...")
@@ -596,7 +596,7 @@ func Fatalf(format string, rest ...interface{}) {
 //
 // so they can be tested with testscript.
 // See https://github.com/fortio/delta/ for an example.
-func FErrf(format string, rest ...interface{}) int {
+func FErrf(format string, rest ...any) int {
 	logPrintf(Fatal, format, rest...)
 	return 1
 }
@@ -615,12 +615,12 @@ func LogVerbose() bool { //nolint:revive // yeah no a bit of stutter is fine her
 // for simple logging. See [Logger()]. See also [NewStdLogger()] for
 // intercepting with same type / when an interface can't be used.
 type LoggerI interface {
-	Printf(format string, rest ...interface{})
+	Printf(format string, rest ...any)
 }
 
 type loggerShm struct{}
 
-func (l *loggerShm) Printf(format string, rest ...interface{}) {
+func (l *loggerShm) Printf(format string, rest ...any) {
 	logPrintf(Info, format, rest...)
 }
 

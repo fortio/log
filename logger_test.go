@@ -360,7 +360,7 @@ func Test_LogS_JSON(t *testing.T) {
 		t.Errorf("unexpected time %v is > 1sec after %v", ts, now)
 	}
 	// check extra attributes
-	var tmp map[string]interface{}
+	var tmp map[string]any
 	err = json.Unmarshal([]byte(actual), &tmp)
 	if err != nil {
 		t.Errorf("unexpected JSON deserialization 2 error %v for %q", err, actual)
@@ -393,7 +393,7 @@ func Test_LogS_JSON_no_file(t *testing.T) {
 	S(Warning, "This will show", Attr("key1", "value 1"))
 	_ = w.Flush()
 	actual := b.String()
-	var tmp map[string]interface{}
+	var tmp map[string]any
 	err := json.Unmarshal([]byte(actual), &tmp)
 	if err != nil {
 		t.Errorf("unexpected JSON deserialization error %v for %q", err, actual)
